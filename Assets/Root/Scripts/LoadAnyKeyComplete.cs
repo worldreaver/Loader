@@ -32,6 +32,7 @@ namespace Worldreaver.Loading
 
         private void LoadNextScene(ILoading iLoad)
         {
+            Setup(); //disable object anykey
             iLoad.LoadNextScene();
             detect.onClick.RemoveAllListeners();
             detect.interactable = false;

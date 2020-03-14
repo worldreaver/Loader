@@ -1,13 +1,4 @@
-﻿/*******************************************************
- * Copyright (C) 2020 worldreaver
- * __________________
- * All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential
- * @author yenmoc phongsoyenmoc.diep@gmail.com
- *******************************************************/
-
-using System;
+﻿using System;
 using System.Collections;
 using UniRx.Async;
 using UnityEngine;

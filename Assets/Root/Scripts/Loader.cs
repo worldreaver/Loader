@@ -50,6 +50,7 @@ namespace Worldreaver.Loading
         [SerializeReference] private ILoadComplete _loadComplete;
         [SerializeField] private GameObject rootUi;
         [SerializeField] private CanvasGroup fadeImageCanvas;
+        [Tooltip("Canvas contains loading bar!")]
         public Canvas canvasLoading;
 
         public bool IsTip => isTip;
@@ -638,24 +639,30 @@ namespace Worldreaver.Loading
         {
             if (_loadComplete == null)
             {
+                // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
                 switch (completeType)
                 {
                     case ECompleteType.Instant:
+                        Debug.Log("new LoadInstantComplete 1");
                         _loadComplete = new LoadInstantComplete();
                         break;
                     case ECompleteType.AnyKey:
+                        Debug.Log("new LoadAnyKeyComplete 1");
                         _loadComplete = new LoadAnyKeyComplete();
                         break;
                 }
             }
             else
             {
+                // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
                 switch (completeType)
                 {
-                    case ECompleteType.Instant when completeType.GetType() != typeof(LoadInstantComplete):
+                    case ECompleteType.Instant when _loadComplete.GetType() != typeof(LoadInstantComplete):
+                        Debug.Log("new LoadInstantComplete");
                         _loadComplete = new LoadInstantComplete();
                         break;
-                    case ECompleteType.AnyKey when completeType.GetType() != typeof(LoadAnyKeyComplete):
+                    case ECompleteType.AnyKey when _loadComplete.GetType() != typeof(LoadAnyKeyComplete):
+                        Debug.Log("new LoadAnyKeyComplete");
                         _loadComplete = new LoadAnyKeyComplete();
                         break;
                 }
