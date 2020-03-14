@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/worldreaver/Loader/compare/1.0.0...1.0.1) (2020-03-14)
+
+
+### Bug Fixes
+
+* InitializeLoadComplete init complete type in anykey mode ([acb8137](https://github.com/worldreaver/Loader/commit/acb8137c3061f52926caeab7e109b1c49daed8bd))
+
 # 1.0.0 (2020-03-14)
 
 
