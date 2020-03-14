@@ -1,0 +1,669 @@
+﻿#pragma warning disable 649
+using System;
+using System.Collections;
+using TMPro;
+using UniRx;
+using UniRx.Async;
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using Random = UnityEngine.Random;
+
+namespace Worldreaver.Loading
+{
+    // ReSharper disable UnusedMember.Global
+    // ReSharper disable UnusedMember.Local
+    public class Loader : MonoBehaviour, ILoading
+    {
+        #region properties
+
+        [SerializeField] private ELoadingType loadingType = ELoadingType.Fake;
+#pragma warning disable 0414
+        [SerializeField] private ECompleteType completeType = ECompleteType.Instant;
+#pragma warning restore 0414
+        [Range(0.5f, 10), SerializeField] private float value = 3f;
+        [Range(0.5f, 7), SerializeField] private float fadeInSpeed = 2f;
+        [Range(0.5f, 7), SerializeField] private float fadeOutSpeed = 2f;
+
+        #region tip
+
+        [SerializeField] private bool isTip;
+        [Range(1, 60), SerializeField] private float timePerTip = 1.5f;
+        [Range(0.5f, 5), SerializeField] private float tipFadeSpeed = 2f;
+        [SerializeField,] private TextMeshProUGUI tipText;
+
+        #endregion
+
+        #region slider bar
+
+        [SerializeField] private bool isProcessBar;
+        [SerializeField] private Slider processBar;
+        [SerializeField] private bool isDisplayTextProcess;
+        [SerializeField] private TextMeshProUGUI processText;
+        [SerializeField] private string processTemplate = "Loading {0}%";
+
+        #endregion
+
+        [SerializeField] private CanvasGroup canvasGroupProcessBar;
+        [SerializeField] private float timeFadeProcessBar = 0.2f;
+        [SerializeReference] private ILoadComplete _loadComplete;
+        [SerializeField] private GameObject rootUi;
+        [SerializeField] private CanvasGroup fadeImageCanvas;
+        public Canvas canvasLoading;
+
+        public bool IsTip => isTip;
+        public bool IsProcessBar => isProcessBar;
+        public TextMeshProUGUI TipText => tipText;
+
+        public CanvasGroup CanvasGroupProcessBar
+        {
+            get => canvasGroupProcessBar;
+            private set => canvasGroupProcessBar = value;
+        }
+
+        public float TimeFadeProcessBar
+        {
+            get => timeFadeProcessBar;
+            private set => timeFadeProcessBar = value;
+        }
+
+        public ILoadComplete LoadComplete
+        {
+            get
+            {
+                if (_loadComplete == null)
+                {
+                    InitializeLoadComplete();
+                }
+
+                return _loadComplete;
+            }
+            private set => _loadComplete = value;
+        }
+
+        public IDisposable DisposableTips { get; private set; }
+        public IDisposable DisposableWaitTips { get; private set; }
+        public IDisposable DisposableNextScene { get; private set; }
+
+        private AsyncOperation _operation;
+        private AsyncOperation _subOperation;
+        private bool _isOperationStarted;
+        private bool _finishLoad;
+        private bool _isTipFadeOut = true;
+        private string[] _tips;
+        private float _lerpValue;
+        private bool _pause;
+        private float _deltaTime;
+
+        #endregion
+
+        #region function
+
+        #region event function
+
+        private void Start()
+        {
+            _deltaTime = Time.deltaTime;
+
+            if (tipText != null)
+            {
+                tipText.gameObject.SetActive(isTip);
+            }
+
+            transform.SetAsLastSibling();
+            InitializeLoadComplete();
+        }
+
+        private void Update()
+        {
+            if (!_isOperationStarted)
+                return;
+            if (_operation == null) return;
+
+            UpdateUi();
+        }
+
+        private void UpdateUi()
+        {
+            if (loadingType == ELoadingType.Async)
+            {
+                var p = (_operation.progress + 0.1f); //Fix problem of 90%
+                _lerpValue = Mathf.Lerp(_lerpValue, p, _deltaTime * value);
+            }
+
+            if (isProcessBar && processBar != null)
+            {
+                processBar.value = _lerpValue;
+            }
+
+            if (isDisplayTextProcess && processText != null && !_finishLoad)
+            {
+                processText.text = string.Format(processTemplate, (Math.Min(_lerpValue * 100, 100)).ToString("F0"));
+            }
+        }
+
+        private void OnFinish()
+        {
+            _finishLoad = true;
+            LoadComplete.OnFinish(this);
+        }
+
+        public void InitializeTips(string[] tips)
+        {
+            _tips = tips;
+        }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            Invoke(nameof(InitializeLoadComplete), 0.1f);
+        }
+#endif
+
+        #endregion
+
+        #region load
+
+        private void SetupLoad(string scene, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
+        {
+            if (onSceneLoaded != null)
+            {
+                LoaderUtility.RegisterOnLoaded(onSceneLoaded);
+            }
+
+            SetupUi();
+            Clear();
+            StartAsyncOperation(scene);
+            _pause = true;
+        }
+
+        public async void Load(string scene, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
+        {
+            SetupLoad(scene, onSceneLoaded);
+            _pause = false;
+            if (loadingType == ELoadingType.Fake)
+            {
+                await UniTask.WhenAll(StartFakeLoading().ToUniTask());
+            }
+
+            OnCompleteWait();
+        }
+
+        public async void Load(string scene, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params Action[] actions)
+        {
+            SetupLoad(scene, onSceneLoaded);
+            var unitasks = new UniTask[actions.Length];
+            for (int i = 0; i < actions.Length; i++)
+            {
+                unitasks[i] = UniTask.Run(actions[i]);
+            }
+
+            if (loadingType == ELoadingType.Fake)
+            {
+                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+            }
+            else
+            {
+                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+            }
+
+            OnCompleteWait();
+        }
+
+        public async void Load(string scene, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params UniTask[] unitasks)
+        {
+            SetupLoad(scene, onSceneLoaded);
+            if (loadingType == ELoadingType.Fake)
+            {
+                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+            }
+            else
+            {
+                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+            }
+
+            OnCompleteWait();
+        }
+
+        private void StartAsyncOperation(string scene)
+        {
+            _operation = LoaderUtility.LoadAsync(scene);
+            _operation.allowSceneActivation = false;
+            _isOperationStarted = true;
+        }
+
+        #endregion
+
+        #region load adtive
+
+        private void StartAsyncOperation(string scene, LoadSceneMode mode)
+        {
+            _operation = LoaderUtility.LoadAsync(scene, mode);
+            _operation.allowSceneActivation = false;
+            _isOperationStarted = true;
+        }
+
+        private void SetupLoadAdtive(string scene, LoadSceneMode mode, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
+        {
+            if (onSceneLoaded != null)
+            {
+                LoaderUtility.RegisterOnLoaded(onSceneLoaded);
+            }
+
+            SetupUi();
+            Clear();
+            StartAsyncOperation(scene, mode);
+            _pause = true;
+        }
+
+        private void OnCompleteWait()
+        {
+            //TODO done loading
+            if (!_finishLoad)
+            {
+                OnFinish();
+            }
+        }
+
+        public async void Load(string scene, LoadSceneMode mode, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
+        {
+            SetupLoadAdtive(scene, mode, onSceneLoaded);
+            if (loadingType == ELoadingType.Fake)
+            {
+                _pause = false;
+                await UniTask.WhenAll(StartFakeLoading().ToUniTask());
+            }
+
+            OnCompleteWait();
+        }
+
+        public async void Load(string scene, LoadSceneMode mode, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params Action[] actions)
+        {
+            SetupLoadAdtive(scene, mode, onSceneLoaded);
+            var unitasks = new UniTask[actions.Length];
+            for (int i = 0; i < actions.Length; i++)
+            {
+                unitasks[i] = UniTask.Run(actions[i]);
+            }
+
+            if (loadingType == ELoadingType.Fake)
+            {
+                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+            }
+            else
+            {
+                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+            }
+
+            OnCompleteWait();
+        }
+
+        public async void Load(string scene, LoadSceneMode mode, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params UniTask[] unitasks)
+        {
+            SetupLoadAdtive(scene, mode, onSceneLoaded);
+
+            if (loadingType == ELoadingType.Fake)
+            {
+                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+            }
+            else
+            {
+                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+            }
+
+            OnCompleteWait();
+        }
+
+        public async void UnLoad(string scene, params Action[] actions)
+        {
+            await LoaderUtility.UnloadAsync(scene);
+            var unitasks = new UniTask[actions.Length];
+            for (int i = 0; i < actions.Length; i++)
+            {
+                unitasks[i] = UniTask.Run(actions[i]);
+            }
+
+            await UniTask.WhenAll(unitasks);
+        }
+
+        public async void UnLoad(string scene, params UniTask[] unitasks)
+        {
+            await LoaderUtility.UnloadAsync(scene);
+            await UniTask.WhenAll(unitasks);
+        }
+
+        #endregion
+
+        #region sub load
+
+        private void SubStartAsyncOperation(string scene)
+        {
+            _subOperation = LoaderUtility.LoadAsync(scene, LoadSceneMode.Additive);
+            _subOperation.allowSceneActivation = false;
+        }
+
+        private void SetupLoadSubType(string scene, string subScene, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
+        {
+            if (onSceneLoaded != null)
+            {
+                LoaderUtility.RegisterOnLoaded(onSceneLoaded);
+            }
+
+            SetupUi();
+            Clear();
+            StartAsyncOperation(scene);
+            SubStartAsyncOperation(subScene);
+            _pause = true;
+        }
+
+        private void SetupLoadSubType(string scene, LoadSceneMode mode, string subScene, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
+        {
+            if (onSceneLoaded != null)
+            {
+                LoaderUtility.RegisterOnLoaded(onSceneLoaded);
+            }
+
+            SetupUi();
+            Clear();
+            StartAsyncOperation(scene, mode);
+            SubStartAsyncOperation(subScene);
+            _pause = true;
+        }
+
+        private void OnCompleteWaitAllSubType()
+        {
+            //TODO done loading
+            // ReSharper disable once InvertIf
+            if (!_finishLoad)
+            {
+                OnFinish();
+                _subOperation.allowSceneActivation = true;
+            }
+        }
+
+        public async void Load(string scene, string subScene, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params Action[] actions)
+        {
+            SetupLoadSubType(scene, subScene, onSceneLoaded);
+            var unitasks = new UniTask[actions.Length];
+            for (int i = 0; i < actions.Length; i++)
+            {
+                unitasks[i] = UniTask.Run(actions[i]);
+            }
+
+            if (loadingType == ELoadingType.Fake)
+            {
+                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+            }
+            else
+            {
+                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+            }
+
+            OnCompleteWaitAllSubType();
+        }
+
+        public async void Load(string scene, string subScene, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params UniTask[] unitasks)
+        {
+            SetupLoadSubType(scene, subScene, onSceneLoaded);
+
+            if (loadingType == ELoadingType.Fake)
+            {
+                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+            }
+            else
+            {
+                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+            }
+
+            OnCompleteWaitAllSubType();
+        }
+
+        public async void Load(string scene, LoadSceneMode mode, string subScene, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params Action[] actions)
+        {
+            SetupLoadSubType(scene, mode, subScene, onSceneLoaded);
+            var unitasks = new UniTask[actions.Length];
+            for (int i = 0; i < actions.Length; i++)
+            {
+                unitasks[i] = UniTask.Run(actions[i]);
+            }
+
+            if (loadingType == ELoadingType.Fake)
+            {
+                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+            }
+            else
+            {
+                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+            }
+
+            OnCompleteWaitAllSubType();
+        }
+
+        #endregion
+
+        #region helper
+
+        private void SetupUi()
+        {
+            if (fadeImageCanvas != null)
+            {
+                fadeImageCanvas.alpha = 1;
+                Observable.FromMicroCoroutine(() => FadeOutCanvas(fadeImageCanvas)).Subscribe();
+            }
+
+            if (isProcessBar)
+            {
+                processBar.value = 0;
+                canvasGroupProcessBar.alpha = 1;
+            }
+
+            LoadComplete.Setup();
+
+            if (isDisplayTextProcess && processText != null)
+            {
+                processText.text = string.Format(processTemplate, (_lerpValue * 100).ToString("F0"));
+            }
+
+            if (isTip && tipText != null)
+            {
+                DisposableTips?.Dispose();
+                DisposableTips = Observable.FromMicroCoroutine(TipsLoop).Subscribe();
+            }
+
+            rootUi.SetActive(true);
+        }
+
+        public void LoadNextScene()
+        {
+            DisposableNextScene?.Dispose();
+            DisposableNextScene = Observable.FromMicroCoroutine(LoadNextSceneIe).Subscribe();
+        }
+
+        private IEnumerator StartFakeLoading()
+        {
+            _lerpValue = 0;
+            while (_lerpValue < 1)
+            {
+                if (!_pause)
+                {
+                    _lerpValue += _deltaTime / value;
+                }
+                else
+                {
+                    if (_lerpValue < 0.42f)
+                    {
+                        _lerpValue += _deltaTime / value / 5f;
+                    }
+                    else if (_lerpValue < 0.8f)
+                    {
+                        _lerpValue += _deltaTime / value / 12f;
+                    }
+                    else if (_lerpValue < 0.95f)
+                    {
+                        _lerpValue += _deltaTime / value / 20f;
+                    }
+                }
+
+                yield return null;
+            }
+        }
+
+        private IEnumerator TipsLoop()
+        {
+            if (tipText == null || !isTip || _tips == null || _tips.Length == 0)
+                yield break;
+
+            var alpha = tipText.color;
+            if (_isTipFadeOut)
+            {
+                tipText.text = _tips[Random.Range(0, _tips.Length)];
+                while (alpha.a < 1)
+                {
+                    alpha.a += _deltaTime * tipFadeSpeed;
+                    tipText.color = alpha;
+                    yield return null;
+                }
+
+                DisposableWaitTips?.Dispose();
+                DisposableWaitTips = Observable.FromMicroCoroutine(() => WaitNextTip(timePerTip)).Subscribe();
+            }
+            else
+            {
+                while (alpha.a > 0)
+                {
+                    alpha.a -= _deltaTime * tipFadeSpeed;
+                    tipText.color = alpha;
+                    yield return null;
+                }
+
+                tipText.text = "";
+                DisposableWaitTips?.Dispose();
+                DisposableWaitTips = Observable.FromMicroCoroutine(() => WaitNextTip(0.75f)).Subscribe();
+            }
+        }
+
+        private IEnumerator WaitNextTip(float t)
+        {
+            _isTipFadeOut = !_isTipFadeOut;
+
+            float current = 0;
+            while (current < t)
+            {
+                current += _deltaTime;
+                yield return null;
+            }
+
+            DisposableTips?.Dispose();
+            DisposableTips = Observable.FromMicroCoroutine(TipsLoop).Subscribe();
+        }
+
+        private IEnumerator LoadNextSceneIe()
+        {
+            _operation.allowSceneActivation = true;
+            fadeImageCanvas.alpha = 1;
+            if (isProcessBar)
+            {
+                canvasGroupProcessBar.alpha = 0;
+            }
+
+            while (fadeImageCanvas.alpha > 0)
+            {
+                fadeImageCanvas.alpha -= _deltaTime * fadeInSpeed;
+                yield return null;
+            }
+
+            Dispose();
+        }
+
+        public IEnumerator FadeOutCanvas(CanvasGroup alpha, float delay = 0)
+        {
+            float current = 0;
+            while (current < delay)
+            {
+                current += _deltaTime;
+                yield return null;
+            }
+
+            while (alpha.alpha > 0)
+            {
+                alpha.alpha -= _deltaTime * fadeOutSpeed;
+                yield return null;
+            }
+        }
+
+        private IEnumerator FadeInCanvas(CanvasGroup alpha, float delay = 0)
+        {
+            float current = 0;
+            while (current < delay)
+            {
+                current += _deltaTime;
+                yield return null;
+            }
+
+            while (alpha.alpha < 1)
+            {
+                alpha.alpha += _deltaTime * fadeInSpeed;
+                yield return null;
+            }
+        }
+
+        public void FadeOutProcessBar()
+        {
+            if (isProcessBar)
+            {
+                Observable.FromMicroCoroutine(() => FadeOutCanvas(canvasGroupProcessBar, timeFadeProcessBar)).Subscribe().AddTo(this);
+            }
+        }
+
+        public void SetActiveTip(bool state)
+        {
+            if (isTip) tipText.gameObject.SetActive(state);
+        }
+
+        private void Dispose()
+        {
+            rootUi.SetActive(false);
+            DisposableTips?.Dispose();
+            DisposableWaitTips?.Dispose();
+            DisposableNextScene?.Dispose();
+        }
+
+        private void Clear()
+        {
+            _finishLoad = false;
+        }
+
+        private void InitializeLoadComplete()
+        {
+            if (_loadComplete == null)
+            {
+                switch (completeType)
+                {
+                    case ECompleteType.Instant:
+                        _loadComplete = new LoadInstantComplete();
+                        break;
+                    case ECompleteType.AnyKey:
+                        _loadComplete = new LoadAnyKeyComplete();
+                        break;
+                }
+            }
+            else
+            {
+                switch (completeType)
+                {
+                    case ECompleteType.Instant when completeType.GetType() != typeof(LoadInstantComplete):
+                        _loadComplete = new LoadInstantComplete();
+                        break;
+                    case ECompleteType.AnyKey when completeType.GetType() != typeof(LoadAnyKeyComplete):
+                        _loadComplete = new LoadAnyKeyComplete();
+                        break;
+                }
+            }
+        }
+
+        #endregion
+
+        #endregion
+    }
+}
