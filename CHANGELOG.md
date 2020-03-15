@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/worldreaver/Loader/compare/1.0.1...1.0.2) (2020-03-15)
+
+
+### Bug Fixes
+
+* state pause change false correct + refactor code + update docs ([2864121](https://github.com/worldreaver/Loader/commit/286412166bce596ccec407475f5b043c092642a3))
+
 ## [1.0.1](https://github.com/worldreaver/Loader/compare/1.0.0...1.0.1) (2020-03-14)
 
 
