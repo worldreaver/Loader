@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using Random = UnityEngine.Random;
+using Worldreaver.Utility;
 
 namespace Worldreaver.Loading
 {
@@ -50,6 +50,7 @@ namespace Worldreaver.Loading
         [SerializeReference] private ILoadComplete _loadComplete;
         [SerializeField] private GameObject rootUi;
         [SerializeField] private CanvasGroup fadeImageCanvas;
+
         [Tooltip("Canvas contains loading bar!")]
         public Canvas canvasLoading;
 
@@ -129,7 +130,7 @@ namespace Worldreaver.Loading
         {
             if (loadingType == ELoadingType.Async)
             {
-                var p = (_operation.progress + 0.1f); //Fix problem of 90%
+                var p = _operation.progress + 0.1f; //Fix problem of 90%
                 _lerpValue = Mathf.Lerp(_lerpValue, p, _deltaTime * value);
             }
 
@@ -166,7 +167,24 @@ namespace Worldreaver.Loading
 
         #region load
 
-        private void SetupLoad(string scene, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
+        /// <summary>
+        /// setup operation load <paramref name="scene"/>
+        /// </summary>
+        /// <param name="scene"></param>
+        private void StartAsyncOperation(string scene)
+        {
+            _operation = LoaderUtility.LoadAsync(scene);
+            _operation.allowSceneActivation = false;
+            _isOperationStarted = true;
+        }
+
+        /// <summary>
+        /// setup load <paramref name="scene"/>
+        /// </summary>
+        /// <param name="scene">scene name</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        private void SetupLoad(string scene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded)
         {
             if (onSceneLoaded != null)
             {
@@ -179,7 +197,13 @@ namespace Worldreaver.Loading
             _pause = true;
         }
 
-        public async void Load(string scene, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
+        /// <summary>
+        /// load scene with scene name and callback <paramref name="onSceneLoaded"/>
+        /// </summary>
+        /// <param name="scene">scene name</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        public async void Load(string scene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded)
         {
             SetupLoad(scene, onSceneLoaded);
             _pause = false;
@@ -191,7 +215,16 @@ namespace Worldreaver.Loading
             OnCompleteWait();
         }
 
-        public async void Load(string scene, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params Action[] actions)
+        /// <summary>
+        /// loading scene with name and callback <paramref name="onSceneLoaded"/>
+        /// loading will succeed when base load complete and all params <paramref name="actions"/> run completed
+        /// </summary>
+        /// <param name="scene">scene name</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        /// <param name="actions">params action will invoked during time loading</param>
+        public async void Load(string scene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            params Action[] actions)
         {
             SetupLoad(scene, onSceneLoaded);
             var unitasks = new UniTask[actions.Length];
@@ -212,7 +245,16 @@ namespace Worldreaver.Loading
             OnCompleteWait();
         }
 
-        public async void Load(string scene, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params UniTask[] unitasks)
+        /// <summary>
+        /// loading scene with name and callback <paramref name="onSceneLoaded"/>
+        /// loading will succeed when base load complete and all params <paramref name="unitasks"/> run completed
+        /// </summary>
+        /// <param name="scene">scene name</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        /// <param name="unitasks">params unitask will invoked during time loading</param>
+        public async void Load(string scene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            params UniTask[] unitasks)
         {
             SetupLoad(scene, onSceneLoaded);
             if (loadingType == ELoadingType.Fake)
@@ -227,25 +269,44 @@ namespace Worldreaver.Loading
             OnCompleteWait();
         }
 
-        private void StartAsyncOperation(string scene)
-        {
-            _operation = LoaderUtility.LoadAsync(scene);
-            _operation.allowSceneActivation = false;
-            _isOperationStarted = true;
-        }
-
         #endregion
 
         #region load adtive
 
-        private void StartAsyncOperation(string scene, LoadSceneMode mode)
+        /// <summary>
+        /// done loading
+        /// </summary>
+        private void OnCompleteWait()
+        {
+            //TODO done loading
+            if (!_finishLoad)
+            {
+                OnFinish();
+            }
+        }
+
+        /// <summary>
+        /// setup operation load scene name and LoadSceneMode <paramref name="mode"/>
+        /// </summary>
+        /// <param name="scene">scene name</param>
+        /// <param name="mode">mode load scene</param>
+        private void StartAsyncOperation(string scene,
+            LoadSceneMode mode)
         {
             _operation = LoaderUtility.LoadAsync(scene, mode);
             _operation.allowSceneActivation = false;
             _isOperationStarted = true;
         }
 
-        private void SetupLoadAdtive(string scene, LoadSceneMode mode, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
+        /// <summary>
+        /// setup load scene name and LoadSceneMode <paramref name="mode"/>
+        /// </summary>
+        /// <param name="scene">scene name</param>
+        /// <param name="mode">mode load scene</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        private void SetupLoad(string scene,
+            LoadSceneMode mode,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded)
         {
             if (onSceneLoaded != null)
             {
@@ -258,30 +319,40 @@ namespace Worldreaver.Loading
             _pause = true;
         }
 
-        private void OnCompleteWait()
+        /// <summary>
+        /// load scene with name with LoadSceneMode <paramref name="mode"/> and callback <paramref name="onSceneLoaded"/>
+        /// </summary>
+        /// <param name="scene">scene name</param>
+        /// <param name="mode">mode load scene</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        public async void Load(string scene,
+            LoadSceneMode mode,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded)
         {
-            //TODO done loading
-            if (!_finishLoad)
-            {
-                OnFinish();
-            }
-        }
-
-        public async void Load(string scene, LoadSceneMode mode, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
-        {
-            SetupLoadAdtive(scene, mode, onSceneLoaded);
+            SetupLoad(scene, mode, onSceneLoaded);
+            _pause = false;
             if (loadingType == ELoadingType.Fake)
             {
-                _pause = false;
                 await UniTask.WhenAll(StartFakeLoading().ToUniTask());
             }
 
             OnCompleteWait();
         }
 
-        public async void Load(string scene, LoadSceneMode mode, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params Action[] actions)
+        /// <summary>
+        /// load scene with name with LoadSceneMode <paramref name="mode"/> and callback <paramref name="onSceneLoaded"/>
+        /// loading will succeed when base load complete and all params <paramref name="actions"/> run completed
+        /// </summary>
+        /// <param name="scene">scene name</param>
+        /// <param name="mode">mode load scene</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        /// <param name="actions">params action will invoked during time loading</param>
+        public async void Load(string scene,
+            LoadSceneMode mode,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            params Action[] actions)
         {
-            SetupLoadAdtive(scene, mode, onSceneLoaded);
+            SetupLoad(scene, mode, onSceneLoaded);
             var unitasks = new UniTask[actions.Length];
             for (int i = 0; i < actions.Length; i++)
             {
@@ -300,9 +371,20 @@ namespace Worldreaver.Loading
             OnCompleteWait();
         }
 
-        public async void Load(string scene, LoadSceneMode mode, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params UniTask[] unitasks)
+        /// <summary>
+        /// load scene with name with LoadSceneMode <paramref name="mode"/> and callback <paramref name="onSceneLoaded"/>
+        /// loading will succeed when base load complete and all params <paramref name="unitasks"/> run completed
+        /// </summary>
+        /// <param name="scene">scene name</param>
+        /// <param name="mode">mode load scene</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        /// <param name="unitasks">params unitask will invoked during time loading</param>
+        public async void Load(string scene,
+            LoadSceneMode mode,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            params UniTask[] unitasks)
         {
-            SetupLoadAdtive(scene, mode, onSceneLoaded);
+            SetupLoad(scene, mode, onSceneLoaded);
 
             if (loadingType == ELoadingType.Fake)
             {
@@ -316,7 +398,13 @@ namespace Worldreaver.Loading
             OnCompleteWait();
         }
 
-        public async void UnLoad(string scene, params Action[] actions)
+        /// <summary>
+        /// unload scene with name
+        /// </summary>
+        /// <param name="scene">scene name</param>
+        /// <param name="actions">params action will invoked during time loading</param>
+        public async void UnLoad(string scene,
+            params Action[] actions)
         {
             await LoaderUtility.UnloadAsync(scene);
             var unitasks = new UniTask[actions.Length];
@@ -328,7 +416,13 @@ namespace Worldreaver.Loading
             await UniTask.WhenAll(unitasks);
         }
 
-        public async void UnLoad(string scene, params UniTask[] unitasks)
+        /// <summary>
+        /// unload scene with name
+        /// </summary>
+        /// <param name="scene">scene name</param>
+        /// <param name="unitasks">params unitask will invoked during time loading</param>
+        public async void UnLoad(string scene,
+            params UniTask[] unitasks)
         {
             await LoaderUtility.UnloadAsync(scene);
             await UniTask.WhenAll(unitasks);
@@ -338,13 +432,39 @@ namespace Worldreaver.Loading
 
         #region sub load
 
+        /// <summary>
+        /// complete loading
+        /// </summary>
+        private void OnCompleteWaitAllSubType()
+        {
+            //TODO done loading
+            // ReSharper disable once InvertIf
+            if (!_finishLoad)
+            {
+                OnFinish();
+                _subOperation.allowSceneActivation = true;
+            }
+        }
+
+        /// <summary>
+        /// setup operation load <paramref name="scene"/>
+        /// </summary>
+        /// <param name="scene"></param>
         private void SubStartAsyncOperation(string scene)
         {
             _subOperation = LoaderUtility.LoadAsync(scene, LoadSceneMode.Additive);
             _subOperation.allowSceneActivation = false;
         }
 
-        private void SetupLoadSubType(string scene, string subScene, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
+        /// <summary>
+        /// setup load scene and subscene
+        /// </summary>
+        /// <param name="scene">scene name load with mode single</param>
+        /// <param name="subScene">sub scene name load with mode additive</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        private void SetupLoadSubType(string scene,
+            string subScene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded)
         {
             if (onSceneLoaded != null)
             {
@@ -358,7 +478,17 @@ namespace Worldreaver.Loading
             _pause = true;
         }
 
-        private void SetupLoadSubType(string scene, LoadSceneMode mode, string subScene, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
+        /// <summary>
+        /// setup load scene and subscene
+        /// </summary>
+        /// <param name="scene">scene name load with LoadSceneMode <paramref name="mode"/></param>
+        /// <param name="mode">mode loading of <paramref name="scene"/></param>
+        /// <param name="subScene">sub scene name load with mode additive</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        private void SetupLoadSubType(string scene,
+            LoadSceneMode mode,
+            string subScene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded)
         {
             if (onSceneLoaded != null)
             {
@@ -372,18 +502,40 @@ namespace Worldreaver.Loading
             _pause = true;
         }
 
-        private void OnCompleteWaitAllSubType()
+        /// <summary>
+        /// load two scene <paramref name="scene"/> and <paramref name="subScene"/> with callback <paramref name="onSceneLoaded"/>
+        /// be careful <paramref name="onSceneLoaded"/> will be called twice, one of <paramref name="scene"/> loaded and one of <paramref name="subScene"/> loaded
+        /// </summary>
+        /// <param name="scene">scene name will load with mode single</param>
+        /// <param name="subScene">sub scene name will load with mode additive</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        public async void Load(string scene,
+            string subScene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded)
         {
-            //TODO done loading
-            // ReSharper disable once InvertIf
-            if (!_finishLoad)
+            SetupLoadSubType(scene, subScene, onSceneLoaded);
+            _pause = false;
+            if (loadingType == ELoadingType.Fake)
             {
-                OnFinish();
-                _subOperation.allowSceneActivation = true;
+                await UniTask.WhenAll(StartFakeLoading().ToUniTask());
             }
+
+            OnCompleteWaitAllSubType();
         }
 
-        public async void Load(string scene, string subScene, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params Action[] actions)
+        /// <summary>
+        /// load two scene <paramref name="scene"/> and <paramref name="subScene"/> with callback <paramref name="onSceneLoaded"/>
+        /// loading will succeed when base load complete and all params <paramref name="actions"/> run completed
+        /// be careful <paramref name="onSceneLoaded"/> will be called twice, one of <paramref name="scene"/> loaded and one of <paramref name="subScene"/> loaded
+        /// </summary>
+        /// <param name="scene">scene name will load with mode single</param>
+        /// <param name="subScene">sub scene name will load with mode additive</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        /// <param name="actions">params action will invoked during time loading</param>
+        public async void Load(string scene,
+            string subScene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            params Action[] actions)
         {
             SetupLoadSubType(scene, subScene, onSceneLoaded);
             var unitasks = new UniTask[actions.Length];
@@ -404,7 +556,19 @@ namespace Worldreaver.Loading
             OnCompleteWaitAllSubType();
         }
 
-        public async void Load(string scene, string subScene, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params UniTask[] unitasks)
+        /// <summary>
+        /// load two scene <paramref name="scene"/> and <paramref name="subScene"/> with callback <paramref name="onSceneLoaded"/>
+        /// loading will succeed when base load complete and all params <paramref name="unitasks"/> run completed
+        /// be careful <paramref name="onSceneLoaded"/> will be called twice, one of <paramref name="scene"/> loaded and one of <paramref name="subScene"/> loaded
+        /// </summary>
+        /// <param name="scene">scene name will load with mode single</param>
+        /// <param name="subScene">sub scene name will load with mode additive</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        /// <param name="unitasks">params unitask will invoked during time loading</param>
+        public async void Load(string scene,
+            string subScene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            params UniTask[] unitasks)
         {
             SetupLoadSubType(scene, subScene, onSceneLoaded);
 
@@ -420,7 +584,21 @@ namespace Worldreaver.Loading
             OnCompleteWaitAllSubType();
         }
 
-        public async void Load(string scene, LoadSceneMode mode, string subScene, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params Action[] actions)
+        /// <summary>
+        /// load two scene <paramref name="scene"/> and <paramref name="subScene"/> with callback <paramref name="onSceneLoaded"/>
+        /// loading will succeed when base load complete and all params <paramref name="actions"/> run completed
+        /// be careful <paramref name="onSceneLoaded"/> will be called twice, one of <paramref name="scene"/> loaded and one of <paramref name="subScene"/> loaded
+        /// </summary>
+        /// <param name="scene">scene name will load with LoadSceneMode <paramref name="mode"/></param>
+        /// <param name="mode">mode load of <paramref name="scene"/></param>
+        /// <param name="subScene">sub scene name will load with mode additive</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        /// <param name="actions">params action will invoked during time loading</param>
+        public async void Load(string scene,
+            LoadSceneMode mode,
+            string subScene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            params Action[] actions)
         {
             SetupLoadSubType(scene, mode, subScene, onSceneLoaded);
             var unitasks = new UniTask[actions.Length];
@@ -428,6 +606,36 @@ namespace Worldreaver.Loading
             {
                 unitasks[i] = UniTask.Run(actions[i]);
             }
+
+            if (loadingType == ELoadingType.Fake)
+            {
+                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+            }
+            else
+            {
+                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+            }
+
+            OnCompleteWaitAllSubType();
+        }
+
+        /// <summary>
+        /// load two scene <paramref name="scene"/> and <paramref name="subScene"/> with callback <paramref name="onSceneLoaded"/>
+        /// loading will succeed when base load complete and all params <paramref name="unitasks"/> run completed
+        /// be careful <paramref name="onSceneLoaded"/> will be called twice, one of <paramref name="scene"/> loaded and one of <paramref name="subScene"/> loaded
+        /// </summary>
+        /// <param name="scene">scene name will load with LoadSceneMode <paramref name="mode"/></param>
+        /// <param name="mode">mode load of <paramref name="scene"/></param>
+        /// <param name="subScene">sub scene name will load with mode additive</param>
+        /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        /// <param name="unitasks">params unitask will invoked during time loading</param>
+        public async void Load(string scene,
+            LoadSceneMode mode,
+            string subScene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            params UniTask[] unitasks)
+        {
+            SetupLoadSubType(scene, mode, subScene, onSceneLoaded);
 
             if (loadingType == ELoadingType.Fake)
             {
@@ -518,7 +726,7 @@ namespace Worldreaver.Loading
             var alpha = tipText.color;
             if (_isTipFadeOut)
             {
-                tipText.text = _tips[Random.Range(0, _tips.Length)];
+                tipText.text = _tips[RandomInstance.This.Next(0, _tips.Length)];
                 while (alpha.a < 1)
                 {
                     alpha.a += _deltaTime * tipFadeSpeed;
@@ -577,7 +785,8 @@ namespace Worldreaver.Loading
             Dispose();
         }
 
-        public IEnumerator FadeOutCanvas(CanvasGroup alpha, float delay = 0)
+        public IEnumerator FadeOutCanvas(CanvasGroup alpha,
+            float delay = 0)
         {
             float current = 0;
             while (current < delay)
@@ -593,7 +802,8 @@ namespace Worldreaver.Loading
             }
         }
 
-        private IEnumerator FadeInCanvas(CanvasGroup alpha, float delay = 0)
+        private IEnumerator FadeInCanvas(CanvasGroup alpha,
+            float delay = 0)
         {
             float current = 0;
             while (current < delay)
@@ -643,11 +853,9 @@ namespace Worldreaver.Loading
                 switch (completeType)
                 {
                     case ECompleteType.Instant:
-                        Debug.Log("new LoadInstantComplete 1");
                         _loadComplete = new LoadInstantComplete();
                         break;
                     case ECompleteType.AnyKey:
-                        Debug.Log("new LoadAnyKeyComplete 1");
                         _loadComplete = new LoadAnyKeyComplete();
                         break;
                 }
@@ -658,11 +866,9 @@ namespace Worldreaver.Loading
                 switch (completeType)
                 {
                     case ECompleteType.Instant when _loadComplete.GetType() != typeof(LoadInstantComplete):
-                        Debug.Log("new LoadInstantComplete");
                         _loadComplete = new LoadInstantComplete();
                         break;
                     case ECompleteType.AnyKey when _loadComplete.GetType() != typeof(LoadAnyKeyComplete):
-                        Debug.Log("new LoadAnyKeyComplete");
                         _loadComplete = new LoadAnyKeyComplete();
                         break;
                 }
