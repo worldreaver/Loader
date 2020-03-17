@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/worldreaver/Loader/compare/1.0.2...1.0.3) (2020-03-17)
+
+
+### Bug Fixes
+
+* use AddTo() ([d525a4c](https://github.com/worldreaver/Loader/commit/d525a4c5f50161eda69b10770a084381c6ed7d25))
+
 ## [1.0.2](https://github.com/worldreaver/Loader/compare/1.0.1...1.0.2) (2020-03-15)
 
 
