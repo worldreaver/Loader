@@ -12,8 +12,6 @@ using Worldreaver.Utility;
 
 namespace Worldreaver.Loading
 {
-    // ReSharper disable UnusedMember.Global
-    // ReSharper disable UnusedMember.Local
     public class Loader : MonoBehaviour, ILoading
     {
         #region properties
@@ -658,7 +656,7 @@ namespace Worldreaver.Loading
             if (fadeImageCanvas != null)
             {
                 fadeImageCanvas.alpha = 1;
-                Observable.FromMicroCoroutine(() => FadeOutCanvas(fadeImageCanvas)).Subscribe();
+                Observable.FromMicroCoroutine(() => FadeOutCanvas(fadeImageCanvas)).Subscribe().AddTo(this);
             }
 
             if (isProcessBar)
@@ -677,7 +675,7 @@ namespace Worldreaver.Loading
             if (isTip && tipText != null)
             {
                 DisposableTips?.Dispose();
-                DisposableTips = Observable.FromMicroCoroutine(TipsLoop).Subscribe();
+                DisposableTips = Observable.FromMicroCoroutine(TipsLoop).Subscribe().AddTo(this);
             }
 
             rootUi.SetActive(true);
@@ -686,7 +684,7 @@ namespace Worldreaver.Loading
         public void LoadNextScene()
         {
             DisposableNextScene?.Dispose();
-            DisposableNextScene = Observable.FromMicroCoroutine(LoadNextSceneIe).Subscribe();
+            DisposableNextScene = Observable.FromMicroCoroutine(LoadNextSceneIe).Subscribe().AddTo(this);
         }
 
         private IEnumerator StartFakeLoading()
@@ -735,7 +733,7 @@ namespace Worldreaver.Loading
                 }
 
                 DisposableWaitTips?.Dispose();
-                DisposableWaitTips = Observable.FromMicroCoroutine(() => WaitNextTip(timePerTip)).Subscribe();
+                DisposableWaitTips = Observable.FromMicroCoroutine(() => WaitNextTip(timePerTip)).Subscribe().AddTo(this);
             }
             else
             {
@@ -748,7 +746,7 @@ namespace Worldreaver.Loading
 
                 tipText.text = "";
                 DisposableWaitTips?.Dispose();
-                DisposableWaitTips = Observable.FromMicroCoroutine(() => WaitNextTip(0.75f)).Subscribe();
+                DisposableWaitTips = Observable.FromMicroCoroutine(() => WaitNextTip(0.75f)).Subscribe().AddTo(this);
             }
         }
 
@@ -764,7 +762,7 @@ namespace Worldreaver.Loading
             }
 
             DisposableTips?.Dispose();
-            DisposableTips = Observable.FromMicroCoroutine(TipsLoop).Subscribe();
+            DisposableTips = Observable.FromMicroCoroutine(TipsLoop).Subscribe().AddTo(this);
         }
 
         private IEnumerator LoadNextSceneIe()
