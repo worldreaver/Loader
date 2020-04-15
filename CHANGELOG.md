@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/worldreaver/Loader/compare/1.0.3...1.0.4) (2020-04-15)
+
+
+### Bug Fixes
+
+* coroutine still run when editor not playing ([20541db](https://github.com/worldreaver/Loader/commit/20541db963f44dd17ce65112d0d0e90cc134364c))
+
 ## [1.0.3](https://github.com/worldreaver/Loader/compare/1.0.2...1.0.3) (2020-03-17)
 
 
