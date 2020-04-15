@@ -56,17 +56,9 @@ namespace Worldreaver.Loading
         public bool IsProcessBar => isProcessBar;
         public TextMeshProUGUI TipText => tipText;
 
-        public CanvasGroup CanvasGroupProcessBar
-        {
-            get => canvasGroupProcessBar;
-            private set => canvasGroupProcessBar = value;
-        }
+        public CanvasGroup CanvasGroupProcessBar { get => canvasGroupProcessBar; private set => canvasGroupProcessBar = value; }
 
-        public float TimeFadeProcessBar
-        {
-            get => timeFadeProcessBar;
-            private set => timeFadeProcessBar = value;
-        }
+        public float TimeFadeProcessBar { get => timeFadeProcessBar; private set => timeFadeProcessBar = value; }
 
         public ILoadComplete LoadComplete
         {
@@ -149,16 +141,14 @@ namespace Worldreaver.Loading
             LoadComplete.OnFinish(this);
         }
 
-        public void InitializeTips(string[] tips)
+        public void InitializeTips(
+            string[] tips)
         {
             _tips = tips;
         }
 
 #if UNITY_EDITOR
-        private void OnValidate()
-        {
-            Invoke(nameof(InitializeLoadComplete), 0.1f);
-        }
+        private void OnValidate() { Invoke(nameof(InitializeLoadComplete), 0.1f); }
 #endif
 
         #endregion
@@ -169,7 +159,8 @@ namespace Worldreaver.Loading
         /// setup operation load <paramref name="scene"/>
         /// </summary>
         /// <param name="scene"></param>
-        private void StartAsyncOperation(string scene)
+        private void StartAsyncOperation(
+            string scene)
         {
             _operation = LoaderUtility.LoadAsync(scene);
             _operation.allowSceneActivation = false;
@@ -181,7 +172,8 @@ namespace Worldreaver.Loading
         /// </summary>
         /// <param name="scene">scene name</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
-        private void SetupLoad(string scene,
+        private void SetupLoad(
+            string scene,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded)
         {
             if (onSceneLoaded != null)
@@ -200,14 +192,16 @@ namespace Worldreaver.Loading
         /// </summary>
         /// <param name="scene">scene name</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
-        public async void Load(string scene,
+        public async void Load(
+            string scene,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded)
         {
             SetupLoad(scene, onSceneLoaded);
             _pause = false;
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading().ToUniTask());
+                await UniTask.WhenAll(StartFakeLoading()
+                    .ToUniTask());
             }
 
             OnCompleteWait();
@@ -220,7 +214,8 @@ namespace Worldreaver.Loading
         /// <param name="scene">scene name</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
         /// <param name="actions">params action will invoked during time loading</param>
-        public async void Load(string scene,
+        public async void Load(
+            string scene,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded,
             params Action[] actions)
         {
@@ -233,11 +228,15 @@ namespace Worldreaver.Loading
 
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+                await UniTask.WhenAll(StartFakeLoading()
+                        .ToUniTask(),
+                    UniTask.WhenAll(unitasks)
+                        .ContinueWith(() => _pause = false));
             }
             else
             {
-                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+                await UniTask.WhenAll(unitasks)
+                    .ContinueWith(() => _pause = false);
             }
 
             OnCompleteWait();
@@ -250,18 +249,23 @@ namespace Worldreaver.Loading
         /// <param name="scene">scene name</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
         /// <param name="unitasks">params unitask will invoked during time loading</param>
-        public async void Load(string scene,
+        public async void Load(
+            string scene,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded,
             params UniTask[] unitasks)
         {
             SetupLoad(scene, onSceneLoaded);
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+                await UniTask.WhenAll(StartFakeLoading()
+                        .ToUniTask(),
+                    UniTask.WhenAll(unitasks)
+                        .ContinueWith(() => _pause = false));
             }
             else
             {
-                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+                await UniTask.WhenAll(unitasks)
+                    .ContinueWith(() => _pause = false);
             }
 
             OnCompleteWait();
@@ -288,7 +292,8 @@ namespace Worldreaver.Loading
         /// </summary>
         /// <param name="scene">scene name</param>
         /// <param name="mode">mode load scene</param>
-        private void StartAsyncOperation(string scene,
+        private void StartAsyncOperation(
+            string scene,
             LoadSceneMode mode)
         {
             _operation = LoaderUtility.LoadAsync(scene, mode);
@@ -302,7 +307,8 @@ namespace Worldreaver.Loading
         /// <param name="scene">scene name</param>
         /// <param name="mode">mode load scene</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
-        private void SetupLoad(string scene,
+        private void SetupLoad(
+            string scene,
             LoadSceneMode mode,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded)
         {
@@ -323,7 +329,8 @@ namespace Worldreaver.Loading
         /// <param name="scene">scene name</param>
         /// <param name="mode">mode load scene</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
-        public async void Load(string scene,
+        public async void Load(
+            string scene,
             LoadSceneMode mode,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded)
         {
@@ -331,7 +338,8 @@ namespace Worldreaver.Loading
             _pause = false;
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading().ToUniTask());
+                await UniTask.WhenAll(StartFakeLoading()
+                    .ToUniTask());
             }
 
             OnCompleteWait();
@@ -345,7 +353,8 @@ namespace Worldreaver.Loading
         /// <param name="mode">mode load scene</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
         /// <param name="actions">params action will invoked during time loading</param>
-        public async void Load(string scene,
+        public async void Load(
+            string scene,
             LoadSceneMode mode,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded,
             params Action[] actions)
@@ -359,11 +368,15 @@ namespace Worldreaver.Loading
 
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+                await UniTask.WhenAll(StartFakeLoading()
+                        .ToUniTask(),
+                    UniTask.WhenAll(unitasks)
+                        .ContinueWith(() => _pause = false));
             }
             else
             {
-                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+                await UniTask.WhenAll(unitasks)
+                    .ContinueWith(() => _pause = false);
             }
 
             OnCompleteWait();
@@ -377,7 +390,8 @@ namespace Worldreaver.Loading
         /// <param name="mode">mode load scene</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
         /// <param name="unitasks">params unitask will invoked during time loading</param>
-        public async void Load(string scene,
+        public async void Load(
+            string scene,
             LoadSceneMode mode,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded,
             params UniTask[] unitasks)
@@ -386,11 +400,15 @@ namespace Worldreaver.Loading
 
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+                await UniTask.WhenAll(StartFakeLoading()
+                        .ToUniTask(),
+                    UniTask.WhenAll(unitasks)
+                        .ContinueWith(() => _pause = false));
             }
             else
             {
-                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+                await UniTask.WhenAll(unitasks)
+                    .ContinueWith(() => _pause = false);
             }
 
             OnCompleteWait();
@@ -401,7 +419,8 @@ namespace Worldreaver.Loading
         /// </summary>
         /// <param name="scene">scene name</param>
         /// <param name="actions">params action will invoked during time loading</param>
-        public async void UnLoad(string scene,
+        public async void UnLoad(
+            string scene,
             params Action[] actions)
         {
             await LoaderUtility.UnloadAsync(scene);
@@ -419,7 +438,8 @@ namespace Worldreaver.Loading
         /// </summary>
         /// <param name="scene">scene name</param>
         /// <param name="unitasks">params unitask will invoked during time loading</param>
-        public async void UnLoad(string scene,
+        public async void UnLoad(
+            string scene,
             params UniTask[] unitasks)
         {
             await LoaderUtility.UnloadAsync(scene);
@@ -448,7 +468,8 @@ namespace Worldreaver.Loading
         /// setup operation load <paramref name="scene"/>
         /// </summary>
         /// <param name="scene"></param>
-        private void SubStartAsyncOperation(string scene)
+        private void SubStartAsyncOperation(
+            string scene)
         {
             _subOperation = LoaderUtility.LoadAsync(scene, LoadSceneMode.Additive);
             _subOperation.allowSceneActivation = false;
@@ -460,7 +481,8 @@ namespace Worldreaver.Loading
         /// <param name="scene">scene name load with mode single</param>
         /// <param name="subScene">sub scene name load with mode additive</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
-        private void SetupLoadSubType(string scene,
+        private void SetupLoadSubType(
+            string scene,
             string subScene,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded)
         {
@@ -483,7 +505,8 @@ namespace Worldreaver.Loading
         /// <param name="mode">mode loading of <paramref name="scene"/></param>
         /// <param name="subScene">sub scene name load with mode additive</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
-        private void SetupLoadSubType(string scene,
+        private void SetupLoadSubType(
+            string scene,
             LoadSceneMode mode,
             string subScene,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded)
@@ -507,7 +530,8 @@ namespace Worldreaver.Loading
         /// <param name="scene">scene name will load with mode single</param>
         /// <param name="subScene">sub scene name will load with mode additive</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
-        public async void Load(string scene,
+        public async void Load(
+            string scene,
             string subScene,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded)
         {
@@ -515,7 +539,8 @@ namespace Worldreaver.Loading
             _pause = false;
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading().ToUniTask());
+                await UniTask.WhenAll(StartFakeLoading()
+                    .ToUniTask());
             }
 
             OnCompleteWaitAllSubType();
@@ -530,7 +555,8 @@ namespace Worldreaver.Loading
         /// <param name="subScene">sub scene name will load with mode additive</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
         /// <param name="actions">params action will invoked during time loading</param>
-        public async void Load(string scene,
+        public async void Load(
+            string scene,
             string subScene,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded,
             params Action[] actions)
@@ -544,11 +570,15 @@ namespace Worldreaver.Loading
 
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+                await UniTask.WhenAll(StartFakeLoading()
+                        .ToUniTask(),
+                    UniTask.WhenAll(unitasks)
+                        .ContinueWith(() => _pause = false));
             }
             else
             {
-                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+                await UniTask.WhenAll(unitasks)
+                    .ContinueWith(() => _pause = false);
             }
 
             OnCompleteWaitAllSubType();
@@ -563,7 +593,8 @@ namespace Worldreaver.Loading
         /// <param name="subScene">sub scene name will load with mode additive</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
         /// <param name="unitasks">params unitask will invoked during time loading</param>
-        public async void Load(string scene,
+        public async void Load(
+            string scene,
             string subScene,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded,
             params UniTask[] unitasks)
@@ -572,11 +603,15 @@ namespace Worldreaver.Loading
 
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+                await UniTask.WhenAll(StartFakeLoading()
+                        .ToUniTask(),
+                    UniTask.WhenAll(unitasks)
+                        .ContinueWith(() => _pause = false));
             }
             else
             {
-                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+                await UniTask.WhenAll(unitasks)
+                    .ContinueWith(() => _pause = false);
             }
 
             OnCompleteWaitAllSubType();
@@ -592,7 +627,8 @@ namespace Worldreaver.Loading
         /// <param name="subScene">sub scene name will load with mode additive</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
         /// <param name="actions">params action will invoked during time loading</param>
-        public async void Load(string scene,
+        public async void Load(
+            string scene,
             LoadSceneMode mode,
             string subScene,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded,
@@ -607,11 +643,15 @@ namespace Worldreaver.Loading
 
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+                await UniTask.WhenAll(StartFakeLoading()
+                        .ToUniTask(),
+                    UniTask.WhenAll(unitasks)
+                        .ContinueWith(() => _pause = false));
             }
             else
             {
-                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+                await UniTask.WhenAll(unitasks)
+                    .ContinueWith(() => _pause = false);
             }
 
             OnCompleteWaitAllSubType();
@@ -627,7 +667,8 @@ namespace Worldreaver.Loading
         /// <param name="subScene">sub scene name will load with mode additive</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
         /// <param name="unitasks">params unitask will invoked during time loading</param>
-        public async void Load(string scene,
+        public async void Load(
+            string scene,
             LoadSceneMode mode,
             string subScene,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded,
@@ -637,11 +678,15 @@ namespace Worldreaver.Loading
 
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false));
+                await UniTask.WhenAll(StartFakeLoading()
+                        .ToUniTask(),
+                    UniTask.WhenAll(unitasks)
+                        .ContinueWith(() => _pause = false));
             }
             else
             {
-                await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false);
+                await UniTask.WhenAll(unitasks)
+                    .ContinueWith(() => _pause = false);
             }
 
             OnCompleteWaitAllSubType();
@@ -656,7 +701,9 @@ namespace Worldreaver.Loading
             if (fadeImageCanvas != null)
             {
                 fadeImageCanvas.alpha = 1;
-                Observable.FromMicroCoroutine(() => FadeOutCanvas(fadeImageCanvas)).Subscribe().AddTo(this);
+                Observable.FromMicroCoroutine(() => FadeOutCanvas(fadeImageCanvas))
+                    .Subscribe()
+                    .AddTo(this);
             }
 
             if (isProcessBar)
@@ -675,7 +722,9 @@ namespace Worldreaver.Loading
             if (isTip && tipText != null)
             {
                 DisposableTips?.Dispose();
-                DisposableTips = Observable.FromMicroCoroutine(TipsLoop).Subscribe().AddTo(this);
+                DisposableTips = Observable.FromMicroCoroutine(TipsLoop)
+                    .Subscribe()
+                    .AddTo(this);
             }
 
             rootUi.SetActive(true);
@@ -684,11 +733,16 @@ namespace Worldreaver.Loading
         public void LoadNextScene()
         {
             DisposableNextScene?.Dispose();
-            DisposableNextScene = Observable.FromMicroCoroutine(LoadNextSceneIe).Subscribe().AddTo(this);
+            DisposableNextScene = Observable.FromMicroCoroutine(LoadNextSceneIe)
+                .Subscribe()
+                .AddTo(this);
         }
 
         private IEnumerator StartFakeLoading()
         {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) yield break;
+#endif
             _lerpValue = 0;
             while (_lerpValue < 1)
             {
@@ -718,6 +772,9 @@ namespace Worldreaver.Loading
 
         private IEnumerator TipsLoop()
         {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) yield break;
+#endif
             if (tipText == null || !isTip || _tips == null || _tips.Length == 0)
                 yield break;
 
@@ -733,7 +790,9 @@ namespace Worldreaver.Loading
                 }
 
                 DisposableWaitTips?.Dispose();
-                DisposableWaitTips = Observable.FromMicroCoroutine(() => WaitNextTip(timePerTip)).Subscribe().AddTo(this);
+                DisposableWaitTips = Observable.FromMicroCoroutine(() => WaitNextTip(timePerTip))
+                    .Subscribe()
+                    .AddTo(this);
             }
             else
             {
@@ -746,12 +805,18 @@ namespace Worldreaver.Loading
 
                 tipText.text = "";
                 DisposableWaitTips?.Dispose();
-                DisposableWaitTips = Observable.FromMicroCoroutine(() => WaitNextTip(0.75f)).Subscribe().AddTo(this);
+                DisposableWaitTips = Observable.FromMicroCoroutine(() => WaitNextTip(0.75f))
+                    .Subscribe()
+                    .AddTo(this);
             }
         }
 
-        private IEnumerator WaitNextTip(float t)
+        private IEnumerator WaitNextTip(
+            float t)
         {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) yield break;
+#endif
             _isTipFadeOut = !_isTipFadeOut;
 
             float current = 0;
@@ -762,11 +827,16 @@ namespace Worldreaver.Loading
             }
 
             DisposableTips?.Dispose();
-            DisposableTips = Observable.FromMicroCoroutine(TipsLoop).Subscribe().AddTo(this);
+            DisposableTips = Observable.FromMicroCoroutine(TipsLoop)
+                .Subscribe()
+                .AddTo(this);
         }
 
         private IEnumerator LoadNextSceneIe()
         {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) yield break;
+#endif
             _operation.allowSceneActivation = true;
             fadeImageCanvas.alpha = 1;
             if (isProcessBar)
@@ -783,9 +853,13 @@ namespace Worldreaver.Loading
             Dispose();
         }
 
-        public IEnumerator FadeOutCanvas(CanvasGroup alpha,
+        public IEnumerator FadeOutCanvas(
+            CanvasGroup alpha,
             float delay = 0)
         {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) yield break;
+#endif
             float current = 0;
             while (current < delay)
             {
@@ -800,9 +874,13 @@ namespace Worldreaver.Loading
             }
         }
 
-        private IEnumerator FadeInCanvas(CanvasGroup alpha,
+        private IEnumerator FadeInCanvas(
+            CanvasGroup alpha,
             float delay = 0)
         {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) yield break;
+#endif
             float current = 0;
             while (current < delay)
             {
@@ -821,11 +899,14 @@ namespace Worldreaver.Loading
         {
             if (isProcessBar)
             {
-                Observable.FromMicroCoroutine(() => FadeOutCanvas(canvasGroupProcessBar, timeFadeProcessBar)).Subscribe().AddTo(this);
+                Observable.FromMicroCoroutine(() => FadeOutCanvas(canvasGroupProcessBar, timeFadeProcessBar))
+                    .Subscribe()
+                    .AddTo(this);
             }
         }
 
-        public void SetActiveTip(bool state)
+        public void SetActiveTip(
+            bool state)
         {
             if (isTip) tipText.gameObject.SetActive(state);
         }
@@ -838,10 +919,7 @@ namespace Worldreaver.Loading
             DisposableNextScene?.Dispose();
         }
 
-        private void Clear()
-        {
-            _finishLoad = false;
-        }
+        private void Clear() { _finishLoad = false; }
 
         private void InitializeLoadComplete()
         {
