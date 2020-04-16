@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/worldreaver/Loader/compare/1.0.4...1.0.5) (2020-04-16)
+
+
+### Bug Fixes
+
+* upgrade version dependencies ([1798bbe](https://github.com/worldreaver/Loader/commit/1798bbea700c54770c45df12ac01ebdd05c6bc4c))
+
 ## [1.0.4](https://github.com/worldreaver/Loader/compare/1.0.3...1.0.4) (2020-04-15)
 
 
