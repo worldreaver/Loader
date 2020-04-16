@@ -17,7 +17,7 @@
     "com.unity.ugui": "1.0.0",
     "com.unity.xr.legacyinputhelpers": "1.3.11",
     "com.worldreaver.unirx": "git+https://github.com/worldreaver/UniRx#7.1.1",
-    "com.worldreaver.unitask": "git+https://github.com/worldreaver/UniTask#1.3.1",
+    "com.worldreaver.unitask": "git+https://github.com/worldreaver/UniTask#upm",
     "com.worldreaver.utility": "git+https://github.com/worldreaver/Utility#upm",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",
@@ -65,12 +65,12 @@
       "hash": "05b8b1ac0001c6547f8f62e1c6b406300fc4e699"
     },
     "com.worldreaver.unitask": {
-      "revision": "1.3.1",
-      "hash": "bf731deff01d968d1d61d02030c60956c867d71d"
+      "revision": "upm",
+      "hash": "43b394371bbdc2bec0d1df8b2f06eeaa1cc4ef2e"
     },
     "com.worldreaver.utility": {
       "revision": "upm",
-      "hash": "de4ea3212c597735a0b28ea32a91472b3d4e5cb1"
+      "hash": "923adbd87dcd484e6f6138e3205bd7b9917b5fae"
     }
   }
 }
