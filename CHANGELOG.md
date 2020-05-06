@@ -1,3 +1,10 @@
+## [1.0.6](https://github.com/worldreaver/Loader/compare/1.0.5...1.0.6) (2020-05-06)
+
+
+### Bug Fixes
+
+* dispose ([177041a](https://github.com/worldreaver/Loader/commit/177041abd578a2ca86dee086e1663259e0c9cf9b))
+
 ## [1.0.5](https://github.com/worldreaver/Loader/compare/1.0.4...1.0.5) (2020-04-16)
 
 
