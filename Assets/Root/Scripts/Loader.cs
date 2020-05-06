@@ -77,6 +77,8 @@ namespace Worldreaver.Loading
         public IDisposable DisposableTips { get; private set; }
         public IDisposable DisposableWaitTips { get; private set; }
         public IDisposable DisposableNextScene { get; private set; }
+        
+        public IDisposable DisposableFadeOut { get; private set; }
 
         private AsyncOperation _operation;
         private AsyncOperation _subOperation;
@@ -86,7 +88,6 @@ namespace Worldreaver.Loading
         private string[] _tips;
         private float _lerpValue;
         private bool _pause;
-        private float _deltaTime;
 
         #endregion
 
@@ -96,8 +97,6 @@ namespace Worldreaver.Loading
 
         private void Start()
         {
-            _deltaTime = Time.deltaTime;
-
             if (tipText != null)
             {
                 tipText.gameObject.SetActive(isTip);
@@ -121,7 +120,7 @@ namespace Worldreaver.Loading
             if (loadingType == ELoadingType.Async)
             {
                 var p = _operation.progress + 0.1f; //Fix problem of 90%
-                _lerpValue = Mathf.Lerp(_lerpValue, p, _deltaTime * value);
+                _lerpValue = Mathf.Lerp(_lerpValue, p, Time.unscaledDeltaTime * value);
             }
 
             if (isProcessBar && processBar != null)
@@ -701,7 +700,8 @@ namespace Worldreaver.Loading
             if (fadeImageCanvas != null)
             {
                 fadeImageCanvas.alpha = 1;
-                Observable.FromMicroCoroutine(() => FadeOutCanvas(fadeImageCanvas))
+                DisposableFadeOut?.Dispose();
+                DisposableFadeOut = Observable.FromMicroCoroutine(() => FadeOutCanvas(fadeImageCanvas))
                     .Subscribe()
                     .AddTo(this);
             }
@@ -748,21 +748,21 @@ namespace Worldreaver.Loading
             {
                 if (!_pause)
                 {
-                    _lerpValue += _deltaTime / value;
+                    _lerpValue += Time.unscaledDeltaTime / value;
                 }
                 else
                 {
                     if (_lerpValue < 0.42f)
                     {
-                        _lerpValue += _deltaTime / value / 5f;
+                        _lerpValue += Time.unscaledDeltaTime / value / 5f;
                     }
                     else if (_lerpValue < 0.8f)
                     {
-                        _lerpValue += _deltaTime / value / 12f;
+                        _lerpValue += Time.unscaledDeltaTime / value / 12f;
                     }
                     else if (_lerpValue < 0.95f)
                     {
-                        _lerpValue += _deltaTime / value / 20f;
+                        _lerpValue += Time.unscaledDeltaTime / value / 20f;
                     }
                 }
 
@@ -784,7 +784,7 @@ namespace Worldreaver.Loading
                 tipText.text = _tips[RandomInstance.This.Next(0, _tips.Length)];
                 while (alpha.a < 1)
                 {
-                    alpha.a += _deltaTime * tipFadeSpeed;
+                    alpha.a += Time.unscaledDeltaTime * tipFadeSpeed;
                     tipText.color = alpha;
                     yield return null;
                 }
@@ -798,7 +798,7 @@ namespace Worldreaver.Loading
             {
                 while (alpha.a > 0)
                 {
-                    alpha.a -= _deltaTime * tipFadeSpeed;
+                    alpha.a -= Time.unscaledDeltaTime * tipFadeSpeed;
                     tipText.color = alpha;
                     yield return null;
                 }
@@ -822,7 +822,7 @@ namespace Worldreaver.Loading
             float current = 0;
             while (current < t)
             {
-                current += _deltaTime;
+                current += Time.unscaledDeltaTime;
                 yield return null;
             }
 
@@ -846,7 +846,7 @@ namespace Worldreaver.Loading
 
             while (fadeImageCanvas.alpha > 0)
             {
-                fadeImageCanvas.alpha -= _deltaTime * fadeInSpeed;
+                fadeImageCanvas.alpha -= Time.unscaledDeltaTime * fadeInSpeed;
                 yield return null;
             }
 
@@ -863,13 +863,13 @@ namespace Worldreaver.Loading
             float current = 0;
             while (current < delay)
             {
-                current += _deltaTime;
+                current += Time.unscaledDeltaTime;
                 yield return null;
             }
 
             while (alpha.alpha > 0)
             {
-                alpha.alpha -= _deltaTime * fadeOutSpeed;
+                alpha.alpha -= Time.unscaledDeltaTime * fadeOutSpeed;
                 yield return null;
             }
         }
@@ -884,13 +884,13 @@ namespace Worldreaver.Loading
             float current = 0;
             while (current < delay)
             {
-                current += _deltaTime;
+                current += Time.unscaledDeltaTime;
                 yield return null;
             }
 
             while (alpha.alpha < 1)
             {
-                alpha.alpha += _deltaTime * fadeInSpeed;
+                alpha.alpha += Time.unscaledDeltaTime * fadeInSpeed;
                 yield return null;
             }
         }
@@ -899,7 +899,8 @@ namespace Worldreaver.Loading
         {
             if (isProcessBar)
             {
-                Observable.FromMicroCoroutine(() => FadeOutCanvas(canvasGroupProcessBar, timeFadeProcessBar))
+                DisposableFadeOut?.Dispose();
+                DisposableFadeOut = Observable.FromMicroCoroutine(() => FadeOutCanvas(canvasGroupProcessBar, timeFadeProcessBar))
                     .Subscribe()
                     .AddTo(this);
             }
@@ -917,6 +918,7 @@ namespace Worldreaver.Loading
             DisposableTips?.Dispose();
             DisposableWaitTips?.Dispose();
             DisposableNextScene?.Dispose();
+            DisposableFadeOut?.Dispose();
         }
 
         private void Clear() { _finishLoad = false; }
@@ -950,6 +952,16 @@ namespace Worldreaver.Loading
                 }
             }
         }
+
+#if UNITY_EDITOR
+        private void OnDisable()
+        {
+            DisposableTips?.Dispose();
+            DisposableWaitTips?.Dispose();
+            DisposableNextScene?.Dispose();
+            DisposableFadeOut?.Dispose();
+        }
+#endif
 
         #endregion
 
