@@ -12,7 +12,7 @@
     "com.unity.textmeshpro": "2.0.1",
     "com.unity.timeline": "1.2.12",
     "com.unity.ugui": "1.0.0",
-    "com.worldreaver.utility": "git+https://github.com/worldreaver/Utility#upm",
+    "com.worldreaver.utility": "https://github.com/worldreaver/Utility.git?path=Assets/Root",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",
     "com.unity.modules.animation": "1.0.0",
@@ -46,17 +46,17 @@
     "com.unity.modules.xr": "1.0.0"
   },
   "lock": {
+    "com.cysharp.unitask": {
+      "revision": "HEAD",
+      "hash": "c1f75d9ebd92de83b05ab8e872eb7176f45d2b0d"
+    },
     "com.neuecc.unirx": {
       "revision": "HEAD",
       "hash": "284d5c50d3f1ddd9fa7df3d382ea904732a9c2ff"
     },
     "com.worldreaver.utility": {
-      "revision": "upm",
-      "hash": "923adbd87dcd484e6f6138e3205bd7b9917b5fae"
-    },
-    "com.cysharp.unitask": {
       "revision": "HEAD",
-      "hash": "c1f75d9ebd92de83b05ab8e872eb7176f45d2b0d"
+      "hash": "faa47b03af93042a8c18a34326a569450f933a02"
     }
   }
 }
