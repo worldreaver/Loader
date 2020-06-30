@@ -1,9 +1,9 @@
 ﻿#pragma warning disable 649
 using System;
 using System.Collections;
+using Cysharp.Threading.Tasks;
 using TMPro;
 using UniRx;
-using UniRx.Async;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
