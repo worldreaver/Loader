@@ -7,9 +7,9 @@
   "author": "yenmoc <phongsoyenmoc.diep@gmail.com> (https://github.com/phongsoyenmoc)",
   "license": "MIT",
   "dependencies": {
-    "com.worldreaver.unirx": "ssh://git@github.com/worldreaver/UniRx#7.1.1",
-    "com.worldreaver.unitask": "ssh://git@github.com/worldreaver/UniTask#1.4.0",
-    "com.worldreaver.utility": "ssh://git@github.com/worldreaver/Utility#1.3.1"
+    "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
+    "com.neuecc.unirx": "https://github.com/neuecc/UniRx.git?path=Assets/Plugins/UniRx/Scripts",
+    "com.worldreaver.utility": "https://github.com/worldreaver/Utility.git?path=Assets/Root"
   },
   "repository": {
     "type": "git",

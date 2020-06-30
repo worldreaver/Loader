@@ -10,6 +10,12 @@
 
 ## Installation
 
+### Install via git URL
+
+After Unity 2019.3.4f1, Unity 2020.1a21, that support path query parameter of git package. You can add `https://github.com/worldreaver/Loader.git?path=Assets/Root` to Package Manager
+
+If you want to set a target version, Loader is using *.*.* release tag so you can specify a version like #1.0.0. For example https://github.com/worldreaver/Loader.git?path=Assets/Root#1.0.0
+
 ## Usage
 
 - use method Load in Loader.cs
