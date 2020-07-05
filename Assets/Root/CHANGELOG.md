@@ -1,3 +1,10 @@
+## [1.0.7](https://github.com/worldreaver/Loader/compare/1.0.6...1.0.7) (2020-07-05)
+
+
+### Performance Improvements
+
+* update depensencies in readme ([afd37b8](https://github.com/worldreaver/Loader/commit/afd37b8ec278f519772cb226c7ce9b9884a0d869))
+
 ## [1.0.6](https://github.com/worldreaver/Loader/compare/1.0.5...1.0.6) (2020-05-06)
 
 
