@@ -16,6 +16,12 @@ After Unity 2019.3.4f1, Unity 2020.1a21, that support path query parameter of gi
 
 If you want to set a target version, Loader is using *.*.* release tag so you can specify a version like #1.0.0. For example https://github.com/worldreaver/Loader.git?path=Assets/Root#1.0.0
 
+### Dependencies
+
+- "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
+- "com.neuecc.unirx": "https://github.com/neuecc/UniRx.git?path=Assets/Plugins/UniRx/Scripts",
+- "com.worldreaver.utility": "https://github.com/worldreaver/Utility.git?path=Assets/Root",
+
 ## Usage
 
 - use method Load in Loader.cs
