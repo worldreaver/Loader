@@ -42,7 +42,7 @@ public class TestUnitask : MonoBehaviour
         {
             StartFakeLoading()
                 .ToUniTask(),
-            AsyncHeavyTaskC(), UniTask.Run(HeavyTaskA)
+            AsyncHeavyTaskD(), UniTask.Run(HeavyTaskA)
             // ,
             // UniTask.WaitUntil(() => isDoneTaskA && isDoneTaskB)
             //     .ContinueWith(async () =>
@@ -336,7 +336,7 @@ public class TestUnitask : MonoBehaviour
     /// <summary>
     /// heavy task d
     /// </summary>
-    private async void AsyncHeavyTaskD()
+    private async UniTask AsyncHeavyTaskD()
     {
         Debug.Log("[TaskD] Starting...");
         isDoneTaskD = false;
@@ -344,18 +344,18 @@ public class TestUnitask : MonoBehaviour
         await UniTask.WhenAll(UniTask.Run(SubTaskA), UniTask.Run(SubTaskB), UniTask.Run(SubTaskC) , UniTask.WaitUntil(() => isDoneTaskA && isDoneTaskB));
 
         Debug.Log("[TaskD] Done WhenAll...");
-        UniTask.Run(() =>
+        await UniTask.Run(() =>
         {
             Debug.Log("[TaskD] Starting run wrapper...");
             for (int i = 0; i < 20000000; i++)
             {
                 var x = Math.Pow(2, 10);
             }
-
-            isDoneTaskD = true;
+            
             Debug.Log("[TaskD] Done run wrapper...");
         });
 
+        isDoneTaskD = true;
         Debug.Log("[TaskD] Done...");
     }
 
