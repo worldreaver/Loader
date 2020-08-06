@@ -36,54 +36,31 @@ public class TestUnitask : MonoBehaviour
 //            UniTask.Run(HeavyTaskC));
     }
 
-
-    private async UniTask HeavyTaskAsyncA1()
-    {
-        for (int i = 0; i < 1000000; i++)
-        {
-            var example = Mathf.Pow(2, 10);
-        }
-
-        Debug.Log("Done A");
-    }
-
-    private async UniTask HeavyTaskAsyncB1()
-    {
-        for (int i = 0; i < 8000000; i++)
-        {
-            var example = Mathf.Pow(2, 10);
-        }
-
-        Debug.Log("Done B");
-    }
-
-
-    public async void TestWhenAll()
+    private async void TestWhenAll()
     {
         var backgroundTasks = new[]
         {
             StartFakeLoading()
                 .ToUniTask(),
-            UniTask.Run(AsyncHeavyTaskC),
-            UniTask.Run(HeavyTaskAsyncB1)//,
-            
+            AsyncHeavyTaskC(), UniTask.Run(HeavyTaskA)
+            // ,
             // UniTask.WaitUntil(() => isDoneTaskA && isDoneTaskB)
             //     .ContinueWith(async () =>
             //     {
-            //         Debug.Log("IN CONTINUTE WITH A");
+            //         Debug.Log("IN CONTINUTE WITH X");
             //
             //         await UniTask.Run(() =>
             //         {
-            //             Debug.Log("[TaskC] Starting run wrapper...");
-            //             for (int i = 0; i < 30000000; i++)
+            //             Debug.Log("[TaskX] Starting run wrapper...");
+            //             for (int i = 0; i < 3000000; i++)
             //             {
             //                 var x = Math.Pow(2, 10);
             //             }
             //
-            //             Debug.Log("[TaskC] Done run wrapper...");
+            //             Debug.Log("[TaskX] Done run wrapper...");
             //         });
             //
-            //         Debug.Log("IN CONTINUTE WITH B");
+            //         Debug.Log("IN CONTINUTE WITH X2");
             //         pause = false;
             //     }),
         };
@@ -92,8 +69,7 @@ public class TestUnitask : MonoBehaviour
         Debug.Log("All task complete!");
     }
 
-
-    public async void LoadA(
+    private async void LoadA(
         Action a,
         Action b,
         Action c,
@@ -117,7 +93,7 @@ public class TestUnitask : MonoBehaviour
     }
 
 
-    public async void LoadStyleB(
+    private async void LoadStyleB(
         Action a,
         Action b,
         Action c,
@@ -134,7 +110,7 @@ public class TestUnitask : MonoBehaviour
         Debug.Log("Complete method B =========================");
     }
 
-    public async void LoadA0(
+    private async void LoadA0(
         params Action[] p)
     {
         Debug.Log("Start A0");
@@ -157,7 +133,7 @@ public class TestUnitask : MonoBehaviour
         Debug.Log("Complete A0");
     }
 
-    public async void LoadStyleB0(
+    private async void LoadStyleB0(
         params Action[] p)
     {
         Debug.Log("Start B0");
@@ -179,7 +155,7 @@ public class TestUnitask : MonoBehaviour
         Debug.Log("Complete B0");
     }
 
-    public async void LoadA2(
+    private async void LoadA2(
         UniTask a,
         UniTask b,
         UniTask c,
@@ -215,7 +191,7 @@ public class TestUnitask : MonoBehaviour
         Debug.Log("Complete B2");
     }
 
-    public async void LoadA3(
+    private async void LoadA3(
         params UniTask[] p)
     {
         Debug.Log("Start A3");
@@ -231,7 +207,7 @@ public class TestUnitask : MonoBehaviour
         Debug.Log("Complete A3");
     }
 
-    public async void LoadStyleB3(
+    private async void LoadStyleB3(
         params UniTask[] p)
     {
         Debug.Log("Start B3");
@@ -287,8 +263,9 @@ public class TestUnitask : MonoBehaviour
 
     /// <summary>
     /// heavy task a
+    /// normal function
     /// </summary>
-    public void HeavyTaskA()
+    private void HeavyTaskA()
     {
         Debug.Log("[TaskA] Starting...");
         isDoneTaskA = false;
@@ -303,8 +280,9 @@ public class TestUnitask : MonoBehaviour
 
     /// <summary>
     /// heavy task b
+    /// normal function
     /// </summary>
-    public void HeavyTaskB()
+    private void HeavyTaskB()
     {
         Debug.Log("[TaskB] Starting...");
         isDoneTaskB = false;
@@ -319,49 +297,51 @@ public class TestUnitask : MonoBehaviour
 
     /// <summary>
     /// heavy task c
+    /// for methods that use Unitask's api like: UniTask.WaitUntil (), UniTask.Run (), etc ...
+    /// then it should not be wrapper by UniTask.Run () anymore
+    /// instead, the return type must be UniTask
+    ///
+    /// does not declare AsyncHeavyTaskC method with return type as void if inside it uses api of unitask already
+    ///
+    /// The AsyncHeavyTaskC method now doesn't need to be wrapped by UniTask.Run () anymore
     /// </summary>
-    public async void AsyncHeavyTaskC()
+    private async UniTask AsyncHeavyTaskC()
     {
         Debug.Log("[TaskC] Starting...");
         isDoneTaskC = false;
 
-        await UniTask.WaitUntil(() => isDoneTaskA && isDoneTaskB);
-            // .ContinueWith(async () =>
-            // {
-            //     
-            //     Debug.Log("[TaskC] Done continue with...");
-            // });
-        
-        
-        // // nếu không được bao bọc bởi Unitask.Run thì nó sẽ thực thi toàn bộ vòng lặp trong 1 frame => freeze
-        // // UniTaskLoopRunnerUpdate => UnityEngine.CoreModule.dll!::UpdateFunction.Invole()  1 call
-        // // nhưng khi bao bọc bởi UniTask.Run thì hàm coi như kết thúc và vì vậy thứ tự thực thi mà bạn muốn khi gọi WhenAll ở trên đã không còn đúng nữa
-        // // hãy cân nhắc để tránh sẩy ra lỗi
-        // await UniTask.Run(() =>
-        // {
-        //     Debug.Log("[TaskC] Starting run wrapper...");
-        //     for (int i = 0; i < 300000000; i++)
-        //     {
-        //         var x = Math.Pow(2, 10);
-        //     }
-        //
-        //     Debug.Log("[TaskC] Done run wrapper...");
-        // });
+        await UniTask.WaitUntil(() => isDoneTaskA && isDoneTaskB).ContinueWith(() => { Debug.Log("[TaskC] Done continue with..."); });
+
+        // if not be wrapper by Unitask.Run then it will execute the entire loop in 1 frame => freeze
+        // UniTaskLoopRunnerUpdate => UnityEngine.CoreModule.dll!::UpdateFunction.Invole()  1 call
+        // nhưng khi bao bọc bởi UniTask.Run thì hàm coi như kết thúc và vì vậy thứ tự thực thi mà bạn muốn khi gọi WhenAll ở trên đã không còn đúng nữa
+        // (but when be wrapper by UniTask.Run, the function will end and so the order of execution you want when calling WhenAll above is no longer true.)
+        // hãy cân nhắc để tránh sẩy ra lỗi (please consider to avoid errors)
+        await UniTask.Run(() =>
+        {
+            Debug.Log("[TaskC] Starting run wrapper...");
+            for (int i = 0; i < 30000000; i++)
+            {
+                var x = Math.Pow(2, 10);
+            }
+
+            Debug.Log("[TaskC] Done run wrapper...");
+        });
 
         isDoneTaskC = true;
-        
+
         Debug.Log("[TaskC] Done...");
     }
 
     /// <summary>
     /// heavy task d
     /// </summary>
-    public async void AsyncHeavyTaskD()
+    private async void AsyncHeavyTaskD()
     {
         Debug.Log("[TaskD] Starting...");
         isDoneTaskD = false;
 
-        await UniTask.WhenAll(UniTask.Run(SubTaskA), UniTask.Run(SubTaskB), UniTask.Run(SubTaskC) /*, UniTask.WaitUntil(() => isDoneTaskA && isDoneTaskB)*/);
+        await UniTask.WhenAll(UniTask.Run(SubTaskA), UniTask.Run(SubTaskB), UniTask.Run(SubTaskC) , UniTask.WaitUntil(() => isDoneTaskA && isDoneTaskB));
 
         Debug.Log("[TaskD] Done WhenAll...");
         UniTask.Run(() =>
@@ -381,6 +361,7 @@ public class TestUnitask : MonoBehaviour
 
     /// <summary>
     /// sub task a
+    /// normal function
     /// </summary>
     private void SubTaskA()
     {
@@ -395,6 +376,7 @@ public class TestUnitask : MonoBehaviour
 
     /// <summary>
     /// sub task b
+    /// normal function
     /// </summary>
     private void SubTaskB()
     {
@@ -409,6 +391,7 @@ public class TestUnitask : MonoBehaviour
 
     /// <summary>
     /// sub task c
+    /// normal function
     /// </summary>
     private void SubTaskC()
     {
