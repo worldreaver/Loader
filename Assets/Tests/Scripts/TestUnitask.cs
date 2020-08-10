@@ -9,218 +9,100 @@ public class TestUnitask : MonoBehaviour
 
     public void Start()
     {
-        TestWhenAll();
-        //LoadA(HeavyTaskA, HeavyTaskB, AsyncHeavyTaskC, AsyncHeavyTaskD);
-        //LoadA0(NormalHeavyTaskA, NormalHeavyTaskB, HeavyTaskC, HeavyTaskD);
-        // LoadA2(UniTask.Run(NormalHeavyTaskA), UniTask.Run(NormalHeavyTaskB), UniTask.Run(HeavyTaskC), UniTask.Run(HeavyTaskD));
+        //TestWhenAll();
 
-        //LoadA3(UniTask.Run(NormalHeavyTaskA), UniTask.Run(NormalHeavyTaskB), UniTask.Run(HeavyTaskC), UniTask.Run(HeavyTaskD));
+        LoadA(UniTask.Run(HeavyTaskA), UniTask.Run(HeavyTaskB), AsyncHeavyTaskC(), AsyncHeavyTaskD());
 
-        //LoadStyleB(NormalHeavyTaskA, NormalHeavyTaskB, HeavyTaskC, HeavyTaskD);
-        //LoadStyleB0(NormalHeavyTaskA, NormalHeavyTaskB, HeavyTaskC, HeavyTaskD);
-        //LoadStyleB2(UniTask.Run(NormalHeavyTaskA), UniTask.Run(NormalHeavyTaskB), UniTask.Run(HeavyTaskC), UniTask.Run(HeavyTaskD));
-        //LoadStyleB3(UniTask.Run(NormalHeavyTaskA), UniTask.Run(NormalHeavyTaskB), UniTask.Run(HeavyTaskC), UniTask.Run(HeavyTaskD));
-
-
-//        UniTask.Run(async () =>
-//        {
-//            await UniTask.WhenAll(
-//                UniTask.Run(NormalHeavyTaskA),
-//                UniTask.Run(NormalHeavyTaskB),
-//                UniTask.Run(HeavyTaskC));
-//        });
-
-//        await UniTask.WhenAll(
-//            UniTask.Run(NormalHeavyTaskA),
-//            UniTask.Run(NormalHeavyTaskB),
-//            UniTask.Run(HeavyTaskC));
+        //LoadAWithParam(UniTask.Run(HeavyTaskA), UniTask.Run(HeavyTaskB), AsyncHeavyTaskC(), AsyncHeavyTaskD());
     }
 
+    /// <summary>
+    /// test when all
+    /// </summary>
     private async void TestWhenAll()
     {
         var backgroundTasks = new[]
         {
             StartFakeLoading()
                 .ToUniTask(),
-            AsyncHeavyTaskD(), UniTask.Run(HeavyTaskA)
-            // ,
-            // UniTask.WaitUntil(() => isDoneTaskA && isDoneTaskB)
-            //     .ContinueWith(async () =>
-            //     {
-            //         Debug.Log("IN CONTINUTE WITH X");
-            //
-            //         await UniTask.Run(() =>
-            //         {
-            //             Debug.Log("[TaskX] Starting run wrapper...");
-            //             for (int i = 0; i < 3000000; i++)
-            //             {
-            //                 var x = Math.Pow(2, 10);
-            //             }
-            //
-            //             Debug.Log("[TaskX] Done run wrapper...");
-            //         });
-            //
-            //         Debug.Log("IN CONTINUTE WITH X2");
-            //         pause = false;
-            //     }),
+            AsyncHeavyTaskD(), UniTask.Run(HeavyTaskA), UniTask.WaitUntil(() => isDoneTaskA && isDoneTaskB)
+                .ContinueWith(async () =>
+                {
+                    Debug.Log("IN CONTINUTE WITH X Start");
+
+                    await UniTask.Run(() =>
+                    {
+                        Debug.Log("[TaskX] Starting run wrapper...");
+                        for (int i = 0; i < 3000000; i++)
+                        {
+                            var x = Math.Pow(2, 10);
+                        }
+
+                        Debug.Log("[TaskX] Done run wrapper...");
+                    });
+
+                    Debug.Log("IN CONTINUTE WITH X Done");
+                    pause = false;
+                }),
         };
         await UniTask.WhenAll(backgroundTasks);
 
         Debug.Log("All task complete!");
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="uniTaskA"></param>
+    /// <param name="uniTaskB"></param>
+    /// <param name="uniTaskC"></param>
+    /// <param name="uniTaskD"></param>
     private async void LoadA(
-        Action a,
-        Action b,
-        Action c,
-        Action d)
+        UniTask uniTaskA,
+        UniTask uniTaskB,
+        UniTask uniTaskC,
+        UniTask uniTaskD)
     {
         Debug.Log("[Load A] Start ========================");
         await UniTask.WhenAll(StartFakeLoading()
                 .ToUniTask(),
-            UniTask.Run(Worker));
+            UniTask.WhenAll(uniTaskA, uniTaskB, uniTaskC, uniTaskD)
+                .ContinueWith(() =>
+                {
+                    Debug.Log("IN CONTINUTE WITH A");
+                    pause = false;
+                }));
 
         Debug.Log("[Load A] Done =========================");
-
-        // worker
-        async void Worker()
-        {
-            await UniTask.WhenAll(UniTask.Run(a), UniTask.Run(b), UniTask.Run(c), UniTask.Run(d));
-
-            Debug.Log("IN CONTINUTE WITH A");
-            pause = false;
-        }
     }
 
-
-    private async void LoadStyleB(
-        Action a,
-        Action b,
-        Action c,
-        Action d)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="uniTaskParam"></param>
+    private async void LoadAWithParam(
+        params UniTask[] uniTaskParam)
     {
-        Debug.Log("Start method B =========================");
-        await UniTask.WhenAll(UniTask.Run(() => a?.Invoke()), UniTask.Run(() => b?.Invoke()), UniTask.Run(() => c?.Invoke()), UniTask.Run(() => d?.Invoke()))
-            .ContinueWith(() =>
-            {
-                Debug.Log("in continute with B");
-                return pause = false;
-            });
-
-        Debug.Log("Complete method B =========================");
-    }
-
-    private async void LoadA0(
-        params Action[] p)
-    {
-        Debug.Log("Start A0");
-
-        UniTask[] p3 = new UniTask[p.Length];
-        for (int i = 0; i < p3.Length; i++)
-        {
-            p3[i] = UniTask.Run(p[i]);
-        }
+        Debug.Log("[Load A With Param] Start ========================");
 
         await UniTask.WhenAll(StartFakeLoading()
                 .ToUniTask(),
-            UniTask.WhenAll(p3)
+            UniTask.WhenAll(uniTaskParam)
                 .ContinueWith(() =>
                 {
-                    Debug.Log("in continute with A0");
+                    Debug.Log("IN CONTINUTE WITH A WITH PARAM");
                     return pause = false;
                 }));
 
-        Debug.Log("Complete A0");
+        Debug.Log("[Load A With Param] Done ========================");
     }
 
-    private async void LoadStyleB0(
-        params Action[] p)
-    {
-        Debug.Log("Start B0");
-        UniTask p2 = UniTask.Run(() =>
-        {
-            for (int i = 0; i < p.Length; i++)
-            {
-                p[i]
-                    ?.Invoke();
-            }
-        });
-        await UniTask.WhenAll(p2)
-            .ContinueWith(() =>
-            {
-                Debug.Log("in continute with B0");
-                return pause = false;
-            });
+    #region out
 
-        Debug.Log("Complete B0");
-    }
-
-    private async void LoadA2(
-        UniTask a,
-        UniTask b,
-        UniTask c,
-        UniTask d)
-    {
-        Debug.Log("Start A2");
-        await UniTask.WhenAll(StartFakeLoading()
-                .ToUniTask(),
-            UniTask.WhenAll(a, b, c, d)
-                .ContinueWith(() =>
-                {
-                    Debug.Log("in continute with A2");
-                    return pause = false;
-                }));
-
-        Debug.Log("Complete A2");
-    }
-
-    public async void LoadStyleB2(
-        UniTask a,
-        UniTask b,
-        UniTask c,
-        UniTask d)
-    {
-        Debug.Log("Start B2");
-        await UniTask.WhenAll(a, b, c, d)
-            .ContinueWith(() =>
-            {
-                Debug.Log("in continute with B2");
-                return pause = false;
-            });
-
-        Debug.Log("Complete B2");
-    }
-
-    private async void LoadA3(
-        params UniTask[] p)
-    {
-        Debug.Log("Start A3");
-        await UniTask.WhenAll(StartFakeLoading()
-                .ToUniTask(),
-            UniTask.WhenAll(p)
-                .ContinueWith(() =>
-                {
-                    Debug.Log("in continute with A3");
-                    return pause = false;
-                }));
-
-        Debug.Log("Complete A3");
-    }
-
-    private async void LoadStyleB3(
-        params UniTask[] p)
-    {
-        Debug.Log("Start B3");
-        await UniTask.WhenAll(p)
-            .ContinueWith(() =>
-            {
-                Debug.Log("in continute with B3");
-                return pause = false;
-            });
-
-        Debug.Log("Complete B3");
-    }
-
+    /// <summary>
+    /// enumeator fake loading
+    /// </summary>
+    /// <returns></returns>
     private IEnumerator StartFakeLoading()
     {
         Debug.Log("=============> Start fake loading");
@@ -253,8 +135,6 @@ public class TestUnitask : MonoBehaviour
 
         Debug.Log("=============> End fake loading");
     }
-
-    #region out
 
     public bool isDoneTaskA;
     public bool isDoneTaskB;
@@ -310,7 +190,8 @@ public class TestUnitask : MonoBehaviour
         Debug.Log("[TaskC] Starting...");
         isDoneTaskC = false;
 
-        await UniTask.WaitUntil(() => isDoneTaskA && isDoneTaskB).ContinueWith(() => { Debug.Log("[TaskC] Done continue with..."); });
+        await UniTask.WaitUntil(() => isDoneTaskA && isDoneTaskB)
+            .ContinueWith(() => { Debug.Log("[TaskC] Done continue with..."); });
 
         // if not be wrapper by Unitask.Run then it will execute the entire loop in 1 frame => freeze
         // UniTaskLoopRunnerUpdate => UnityEngine.CoreModule.dll!::UpdateFunction.Invole()  1 call
@@ -341,7 +222,7 @@ public class TestUnitask : MonoBehaviour
         Debug.Log("[TaskD] Starting...");
         isDoneTaskD = false;
 
-        await UniTask.WhenAll(UniTask.Run(SubTaskA), UniTask.Run(SubTaskB), UniTask.Run(SubTaskC) , UniTask.WaitUntil(() => isDoneTaskA && isDoneTaskB));
+        await UniTask.WhenAll(UniTask.Run(SubTaskA), UniTask.Run(SubTaskB), UniTask.Run(SubTaskC), UniTask.WaitUntil(() => isDoneTaskA && isDoneTaskB));
 
         Debug.Log("[TaskD] Done WhenAll...");
         await UniTask.Run(() =>
@@ -351,7 +232,7 @@ public class TestUnitask : MonoBehaviour
             {
                 var x = Math.Pow(2, 10);
             }
-            
+
             Debug.Log("[TaskD] Done run wrapper...");
         });
 
