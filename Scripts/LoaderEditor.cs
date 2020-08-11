@@ -29,7 +29,7 @@ namespace Worldreaver.Loading
             EditorUtil.SerializeField(serializedObject, "fadeOutSpeed");
 
             EditorUtil.DrawSeparator();
-            var isTip = EditorUtil.SerializeField(serializedObject, "isTip");
+            var isTip = EditorUtil.SerializeField(serializedObject, "isTip", "Using Tip");
             if (isTip.boolValue)
             {
                 GUILayout.Space(4);
@@ -39,18 +39,20 @@ namespace Worldreaver.Loading
             }
 
             EditorUtil.DrawSeparator();
-            var isProcessBar = EditorUtil.SerializeField(serializedObject, "isProcessBar");
+            var isProcessBar = EditorUtil.SerializeField(serializedObject, "isProcessBar", "Using ProcessBar");
             if (isProcessBar.boolValue)
             {
                 GUILayout.Space(4);
                 EditorUtil.SerializeField(serializedObject, "processBar");
-                var isDisplayTextProcess = EditorUtil.SerializeField(serializedObject, "isDisplayTextProcess", "Display Text");
-                if (isDisplayTextProcess.boolValue)
-                {
-                    GUILayout.Space(4);
-                    EditorUtil.SerializeField(serializedObject, "processText", "Text");
-                    EditorUtil.SerializeField(serializedObject, "processTemplate", "Template");
-                }
+            }
+            
+            GUILayout.Space(6);
+            var isDisplayTextProcess = EditorUtil.SerializeField(serializedObject, "isDisplayTextProcess", "Using Text Process");
+            if (isDisplayTextProcess.boolValue)
+            {
+                GUILayout.Space(4);
+                EditorUtil.SerializeField(serializedObject, "processText", "Text");
+                EditorUtil.SerializeField(serializedObject, "processTemplate");
             }
 
             GUILayout.Space(4);
