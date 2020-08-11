@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 649
 using System;
 using System.Collections;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UniRx;
@@ -77,7 +78,7 @@ namespace Worldreaver.Loading
         public IDisposable DisposableTips { get; private set; }
         public IDisposable DisposableWaitTips { get; private set; }
         public IDisposable DisposableNextScene { get; private set; }
-        
+
         public IDisposable DisposableFadeOut { get; private set; }
 
         private AsyncOperation _operation;
@@ -88,6 +89,7 @@ namespace Worldreaver.Loading
         private string[] _tips;
         private float _lerpValue;
         private bool _pause;
+        private CancellationTokenSource _tokenSource;
 
         #endregion
 
@@ -199,8 +201,17 @@ namespace Worldreaver.Loading
             _pause = false;
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading()
-                    .ToUniTask());
+                try
+                {
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask()).WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    return;
+                }
             }
 
             OnCompleteWait();
@@ -221,15 +232,32 @@ namespace Worldreaver.Loading
             SetupLoad(scene, onSceneLoaded);
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading()
-                        .ToUniTask(),
-                    UniTask.WhenAll(unitasks)
-                        .ContinueWith(() => _pause = false));
+                try
+                {
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false))
+                        .WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    return;
+                }
             }
             else
             {
-                await UniTask.WhenAll(unitasks)
-                    .ContinueWith(() => _pause = false);
+                try
+                {
+                    await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false).WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    return;
+                }
             }
 
             OnCompleteWait();
@@ -252,23 +280,44 @@ namespace Worldreaver.Loading
             SetupLoad(scene, onSceneLoaded);
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading()
-                        .ToUniTask(),
-                    UniTask.WhenAll(unitasks)
+                try
+                {
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(),
+                            UniTask.WhenAll(unitasks)
+                                .ContinueWith(async () =>
+                                {
+                                    await uniTaskContinueWith;
+                                    return _pause = false;
+                                }))
+                        .WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    return;
+                }
+            }
+            else
+            {
+                try
+                {
+                    await UniTask.WhenAll(unitasks)
                         .ContinueWith(async () =>
                         {
                             await uniTaskContinueWith;
                             return _pause = false;
-                        }));
-            }
-            else
-            {
-                await UniTask.WhenAll(unitasks)
-                    .ContinueWith(async () =>
-                    {
-                        await uniTaskContinueWith;
-                        return _pause = false;
-                    });
+                        })
+                        .WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    return;
+                }
             }
 
             OnCompleteWait();
@@ -341,8 +390,17 @@ namespace Worldreaver.Loading
             _pause = false;
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading()
-                    .ToUniTask());
+                try
+                {
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask()).WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    return;
+                }
             }
 
             OnCompleteWait();
@@ -355,26 +413,49 @@ namespace Worldreaver.Loading
         /// <param name="scene">scene name</param>
         /// <param name="mode">mode load scene</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
+        /// <param name="tokenSource">token source handle cancel unitask</param>
         /// <param name="unitasks">params unitask will invoked during time loading</param>
         public async void Load(
             string scene,
             LoadSceneMode mode,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            CancellationTokenSource tokenSource = null,
             params UniTask[] unitasks)
         {
+            _tokenSource = tokenSource;
+            var token = _tokenSource?.Token ?? default;
             SetupLoad(scene, mode, onSceneLoaded);
 
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading()
-                        .ToUniTask(),
-                    UniTask.WhenAll(unitasks)
-                        .ContinueWith(() => _pause = false));
+                try
+                {
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: token), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false))
+                        .WithCancellation(token);
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    ReleaseTokenSource();
+                    return;
+                }
             }
             else
             {
-                await UniTask.WhenAll(unitasks)
-                    .ContinueWith(() => _pause = false);
+                try
+                {
+                    await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false).WithCancellation(token);
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    ReleaseTokenSource();
+                    return;
+                }
             }
 
             OnCompleteWait();
@@ -392,31 +473,61 @@ namespace Worldreaver.Loading
         public async void Load(
             string scene,
             LoadSceneMode mode,
-            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
             UniTask uniTaskContinueWith,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
             params UniTask[] unitasks)
         {
             SetupLoad(scene, mode, onSceneLoaded);
 
+            var token = _tokenSource.Token;
+            foreach (var uniTask in unitasks) uniTask.WithCancellation(token); // link token for all task
+            
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading()
-                        .ToUniTask(),
-                    UniTask.WhenAll(unitasks)
-                        .ContinueWith(async () =>
-                        {
-                            await uniTaskContinueWith;
-                            return _pause = false;
-                        }));
+                try
+                {
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: token),
+                            UniTask.WhenAll(unitasks)
+                                .ContinueWith(async () =>
+                                {
+                                    uniTaskContinueWith.WithCancellation(token);
+                                    await uniTaskContinueWith;
+                                    return _pause = false;
+                                }))
+                        .WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    _tokenSource.Cancel();
+                    _tokenSource.Dispose();
+                    return;
+                }
             }
             else
             {
-                await UniTask.WhenAll(unitasks)
-                    .ContinueWith(async () =>
-                    {
-                        await uniTaskContinueWith;
-                        return _pause = false;
-                    });
+                try
+                {
+                    await UniTask.WhenAll(unitasks)
+                        .ContinueWith(async () =>
+                        {
+                            uniTaskContinueWith.WithCancellation(token);
+                            await uniTaskContinueWith;
+                            return _pause = false;
+                        })
+                        .WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    _tokenSource.Cancel();
+                    _tokenSource.Dispose();
+                    return;
+                }
             }
 
             OnCompleteWait();
@@ -432,7 +543,17 @@ namespace Worldreaver.Loading
             params UniTask[] unitasks)
         {
             await LoaderUtility.UnloadAsync(scene);
-            await UniTask.WhenAll(unitasks);
+            try
+            {
+                await UniTask.WhenAll(unitasks).WithCancellation(this.GetCancellationTokenOnDestroy());
+            }
+            catch (OperationCanceledException e)
+            {
+#if UNITY_EDITOR
+                Debug.Log(e.Message);
+#endif
+                return;
+            }
         }
 
         #endregion
@@ -528,8 +649,7 @@ namespace Worldreaver.Loading
             _pause = false;
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading()
-                    .ToUniTask());
+                await UniTask.WhenAll(StartFakeLoading().ToUniTask());
             }
 
             OnCompleteWaitAllSubType();
@@ -554,15 +674,32 @@ namespace Worldreaver.Loading
 
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading()
-                        .ToUniTask(),
-                    UniTask.WhenAll(unitasks)
-                        .ContinueWith(() => _pause = false));
+                try
+                {
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false))
+                        .WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    return;
+                }
             }
             else
             {
-                await UniTask.WhenAll(unitasks)
-                    .ContinueWith(() => _pause = false);
+                try
+                {
+                    await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false).WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    return;
+                }
             }
 
             OnCompleteWaitAllSubType();
@@ -581,31 +718,52 @@ namespace Worldreaver.Loading
         public async void Load(
             string scene,
             string subScene,
-            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
             UniTask uniTaskContinueWith,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
             params UniTask[] unitasks)
         {
             SetupLoadSubType(scene, subScene, onSceneLoaded);
 
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading()
-                        .ToUniTask(),
-                    UniTask.WhenAll(unitasks)
+                try
+                {
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(),
+                            UniTask.WhenAll(unitasks)
+                                .ContinueWith(async () =>
+                                {
+                                    await uniTaskContinueWith;
+                                    return _pause = false;
+                                }))
+                        .WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    return;
+                }
+            }
+            else
+            {
+                try
+                {
+                    await UniTask.WhenAll(unitasks)
                         .ContinueWith(async () =>
                         {
                             await uniTaskContinueWith;
                             return _pause = false;
-                        }));
-            }
-            else
-            {
-                await UniTask.WhenAll(unitasks)
-                    .ContinueWith(async () =>
-                    {
-                        await uniTaskContinueWith;
-                        return _pause = false;
-                    });
+                        })
+                        .WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    return;
+                }
             }
 
             OnCompleteWaitAllSubType();
@@ -632,15 +790,32 @@ namespace Worldreaver.Loading
 
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading()
-                        .ToUniTask(),
-                    UniTask.WhenAll(unitasks)
-                        .ContinueWith(() => _pause = false));
+                try
+                {
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false))
+                        .WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    return;
+                }
             }
             else
             {
-                await UniTask.WhenAll(unitasks)
-                    .ContinueWith(() => _pause = false);
+                try
+                {
+                    await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false).WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    return;
+                }
             }
 
             OnCompleteWaitAllSubType();
@@ -669,28 +844,49 @@ namespace Worldreaver.Loading
 
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading()
-                        .ToUniTask(),
-                    UniTask.WhenAll(unitasks)
+                try
+                {
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(),
+                            UniTask.WhenAll(unitasks)
+                                .ContinueWith(async () =>
+                                {
+                                    await uniTaskContinueWith;
+                                    return _pause = false;
+                                }))
+                        .WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    return;
+                }
+            }
+            else
+            {
+                try
+                {
+                    await UniTask.WhenAll(unitasks)
                         .ContinueWith(async () =>
                         {
                             await uniTaskContinueWith;
                             return _pause = false;
-                        }));
-            }
-            else
-            {
-                await UniTask.WhenAll(unitasks)
-                    .ContinueWith(async () =>
-                    {
-                        await uniTaskContinueWith;
-                        return _pause = false;
-                    });
+                        })
+                        .WithCancellation(this.GetCancellationTokenOnDestroy());
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    return;
+                }
             }
 
             OnCompleteWaitAllSubType();
         }
-        
+
         #endregion
 
         #region helper
@@ -701,9 +897,7 @@ namespace Worldreaver.Loading
             {
                 fadeImageCanvas.alpha = 1;
                 DisposableFadeOut?.Dispose();
-                DisposableFadeOut = Observable.FromMicroCoroutine(() => FadeOutCanvas(fadeImageCanvas))
-                    .Subscribe()
-                    .AddTo(this);
+                DisposableFadeOut = Observable.FromMicroCoroutine(() => FadeOutCanvas(fadeImageCanvas)).Subscribe().AddTo(this);
             }
 
             if (isProcessBar)
@@ -722,9 +916,7 @@ namespace Worldreaver.Loading
             if (isTip && tipText != null)
             {
                 DisposableTips?.Dispose();
-                DisposableTips = Observable.FromMicroCoroutine(TipsLoop)
-                    .Subscribe()
-                    .AddTo(this);
+                DisposableTips = Observable.FromMicroCoroutine(TipsLoop).Subscribe().AddTo(this);
             }
 
             rootUi.SetActive(true);
@@ -733,9 +925,7 @@ namespace Worldreaver.Loading
         public void LoadNextScene()
         {
             DisposableNextScene?.Dispose();
-            DisposableNextScene = Observable.FromMicroCoroutine(LoadNextSceneIe)
-                .Subscribe()
-                .AddTo(this);
+            DisposableNextScene = Observable.FromMicroCoroutine(LoadNextSceneIe).Subscribe().AddTo(this);
         }
 
         private IEnumerator StartFakeLoading()
@@ -790,9 +980,7 @@ namespace Worldreaver.Loading
                 }
 
                 DisposableWaitTips?.Dispose();
-                DisposableWaitTips = Observable.FromMicroCoroutine(() => WaitNextTip(timePerTip))
-                    .Subscribe()
-                    .AddTo(this);
+                DisposableWaitTips = Observable.FromMicroCoroutine(() => WaitNextTip(timePerTip)).Subscribe().AddTo(this);
             }
             else
             {
@@ -805,9 +993,7 @@ namespace Worldreaver.Loading
 
                 tipText.text = "";
                 DisposableWaitTips?.Dispose();
-                DisposableWaitTips = Observable.FromMicroCoroutine(() => WaitNextTip(0.75f))
-                    .Subscribe()
-                    .AddTo(this);
+                DisposableWaitTips = Observable.FromMicroCoroutine(() => WaitNextTip(0.75f)).Subscribe().AddTo(this);
             }
         }
 
@@ -827,9 +1013,7 @@ namespace Worldreaver.Loading
             }
 
             DisposableTips?.Dispose();
-            DisposableTips = Observable.FromMicroCoroutine(TipsLoop)
-                .Subscribe()
-                .AddTo(this);
+            DisposableTips = Observable.FromMicroCoroutine(TipsLoop).Subscribe().AddTo(this);
         }
 
         private IEnumerator LoadNextSceneIe()
@@ -850,6 +1034,7 @@ namespace Worldreaver.Loading
                 yield return null;
             }
 
+            rootUi.SetActive(false);
             Dispose();
         }
 
@@ -900,9 +1085,7 @@ namespace Worldreaver.Loading
             if (isProcessBar)
             {
                 DisposableFadeOut?.Dispose();
-                DisposableFadeOut = Observable.FromMicroCoroutine(() => FadeOutCanvas(canvasGroupProcessBar, timeFadeProcessBar))
-                    .Subscribe()
-                    .AddTo(this);
+                DisposableFadeOut = Observable.FromMicroCoroutine(() => FadeOutCanvas(canvasGroupProcessBar, timeFadeProcessBar)).Subscribe().AddTo(this);
             }
         }
 
@@ -914,7 +1097,6 @@ namespace Worldreaver.Loading
 
         private void Dispose()
         {
-            rootUi.SetActive(false);
             DisposableTips?.Dispose();
             DisposableWaitTips?.Dispose();
             DisposableNextScene?.Dispose();
@@ -953,14 +1135,15 @@ namespace Worldreaver.Loading
             }
         }
 
-#if UNITY_EDITOR
-        private void OnDisable()
+        private void ReleaseTokenSource()
         {
-            DisposableTips?.Dispose();
-            DisposableWaitTips?.Dispose();
-            DisposableNextScene?.Dispose();
-            DisposableFadeOut?.Dispose();
+            if (_tokenSource == null) return;
+            _tokenSource.Cancel();
+            _tokenSource.Dispose();
         }
+        
+#if UNITY_EDITOR
+        private void OnDisable() { Dispose(); }
 #endif
 
         #endregion
