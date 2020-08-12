@@ -80,6 +80,7 @@ namespace Worldreaver.Loading
         public IDisposable DisposableNextScene { get; private set; }
 
         public IDisposable DisposableFadeOut { get; private set; }
+        public CancellationToken Token => _token;
 
         private AsyncOperation _operation;
         private AsyncOperation _subOperation;
@@ -90,6 +91,7 @@ namespace Worldreaver.Loading
         private float _lerpValue;
         private bool _pause;
         private CancellationTokenSource _tokenSource;
+        private CancellationToken _token;
 
         #endregion
 
@@ -99,6 +101,8 @@ namespace Worldreaver.Loading
 
         private void Start()
         {
+            _tokenSource = new CancellationTokenSource();
+            _token = _tokenSource.Token;
             if (tipText != null)
             {
                 tipText.gameObject.SetActive(isTip);
@@ -203,13 +207,14 @@ namespace Worldreaver.Loading
             {
                 try
                 {
-                    await UniTask.WhenAll(StartFakeLoading().ToUniTask()).WithCancellation(this.GetCancellationTokenOnDestroy());
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: _token)).WithCancellation(this.GetCancellationTokenOnDestroy());
                 }
                 catch (OperationCanceledException e)
                 {
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -234,7 +239,7 @@ namespace Worldreaver.Loading
             {
                 try
                 {
-                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false))
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: _token), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false))
                         .WithCancellation(this.GetCancellationTokenOnDestroy());
                 }
                 catch (OperationCanceledException e)
@@ -242,6 +247,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -256,6 +262,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -282,11 +289,11 @@ namespace Worldreaver.Loading
             {
                 try
                 {
-                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(),
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: _token),
                             UniTask.WhenAll(unitasks)
                                 .ContinueWith(async () =>
                                 {
-                                    await uniTaskContinueWith;
+                                    await uniTaskContinueWith.WithCancellation(_token);
                                     return _pause = false;
                                 }))
                         .WithCancellation(this.GetCancellationTokenOnDestroy());
@@ -296,6 +303,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -306,7 +314,7 @@ namespace Worldreaver.Loading
                     await UniTask.WhenAll(unitasks)
                         .ContinueWith(async () =>
                         {
-                            await uniTaskContinueWith;
+                            await uniTaskContinueWith.WithCancellation(_token);
                             return _pause = false;
                         })
                         .WithCancellation(this.GetCancellationTokenOnDestroy());
@@ -316,6 +324,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -392,13 +401,14 @@ namespace Worldreaver.Loading
             {
                 try
                 {
-                    await UniTask.WhenAll(StartFakeLoading().ToUniTask()).WithCancellation(this.GetCancellationTokenOnDestroy());
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: _token)).WithCancellation(this.GetCancellationTokenOnDestroy());
                 }
                 catch (OperationCanceledException e)
                 {
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -413,25 +423,21 @@ namespace Worldreaver.Loading
         /// <param name="scene">scene name</param>
         /// <param name="mode">mode load scene</param>
         /// <param name="onSceneLoaded">callback call when scene loaded</param>
-        /// <param name="tokenSource">token source handle cancel unitask</param>
         /// <param name="unitasks">params unitask will invoked during time loading</param>
         public async void Load(
             string scene,
             LoadSceneMode mode,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded,
-            CancellationTokenSource tokenSource = null,
             params UniTask[] unitasks)
         {
-            _tokenSource = tokenSource;
-            var token = _tokenSource?.Token ?? default;
             SetupLoad(scene, mode, onSceneLoaded);
 
             if (loadingType == ELoadingType.Fake)
             {
                 try
                 {
-                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: token), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false))
-                        .WithCancellation(token);
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: _token), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false))
+                        .WithCancellation(this.GetCancellationTokenOnDestroy());
                 }
                 catch (OperationCanceledException e)
                 {
@@ -446,7 +452,7 @@ namespace Worldreaver.Loading
             {
                 try
                 {
-                    await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false).WithCancellation(token);
+                    await UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false).WithCancellation(_token);
                 }
                 catch (OperationCanceledException e)
                 {
@@ -479,19 +485,15 @@ namespace Worldreaver.Loading
         {
             SetupLoad(scene, mode, onSceneLoaded);
 
-            var token = _tokenSource.Token;
-            foreach (var uniTask in unitasks) uniTask.WithCancellation(token); // link token for all task
-            
             if (loadingType == ELoadingType.Fake)
             {
                 try
                 {
-                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: token),
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: _token),
                             UniTask.WhenAll(unitasks)
                                 .ContinueWith(async () =>
                                 {
-                                    uniTaskContinueWith.WithCancellation(token);
-                                    await uniTaskContinueWith;
+                                    await uniTaskContinueWith.WithCancellation(_token);
                                     return _pause = false;
                                 }))
                         .WithCancellation(this.GetCancellationTokenOnDestroy());
@@ -501,8 +503,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
-                    _tokenSource.Cancel();
-                    _tokenSource.Dispose();
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -513,8 +514,7 @@ namespace Worldreaver.Loading
                     await UniTask.WhenAll(unitasks)
                         .ContinueWith(async () =>
                         {
-                            uniTaskContinueWith.WithCancellation(token);
-                            await uniTaskContinueWith;
+                            await uniTaskContinueWith.WithCancellation(_token);
                             return _pause = false;
                         })
                         .WithCancellation(this.GetCancellationTokenOnDestroy());
@@ -524,8 +524,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
-                    _tokenSource.Cancel();
-                    _tokenSource.Dispose();
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -552,6 +551,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                 Debug.Log(e.Message);
 #endif
+                ReleaseTokenSource();
                 return;
             }
         }
@@ -649,7 +649,18 @@ namespace Worldreaver.Loading
             _pause = false;
             if (loadingType == ELoadingType.Fake)
             {
-                await UniTask.WhenAll(StartFakeLoading().ToUniTask());
+                try
+                {
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: _token));
+                }
+                catch (OperationCanceledException e)
+                {
+#if UNITY_EDITOR
+                    Debug.Log(e.Message);
+#endif
+                    ReleaseTokenSource();
+                    return;
+                }
             }
 
             OnCompleteWaitAllSubType();
@@ -676,7 +687,7 @@ namespace Worldreaver.Loading
             {
                 try
                 {
-                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false))
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: _token), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false))
                         .WithCancellation(this.GetCancellationTokenOnDestroy());
                 }
                 catch (OperationCanceledException e)
@@ -684,6 +695,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -698,6 +710,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -728,11 +741,11 @@ namespace Worldreaver.Loading
             {
                 try
                 {
-                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(),
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: _token),
                             UniTask.WhenAll(unitasks)
                                 .ContinueWith(async () =>
                                 {
-                                    await uniTaskContinueWith;
+                                    await uniTaskContinueWith.WithCancellation(_token);
                                     return _pause = false;
                                 }))
                         .WithCancellation(this.GetCancellationTokenOnDestroy());
@@ -742,6 +755,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -752,7 +766,7 @@ namespace Worldreaver.Loading
                     await UniTask.WhenAll(unitasks)
                         .ContinueWith(async () =>
                         {
-                            await uniTaskContinueWith;
+                            await uniTaskContinueWith.WithCancellation(_token);
                             return _pause = false;
                         })
                         .WithCancellation(this.GetCancellationTokenOnDestroy());
@@ -762,6 +776,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -792,7 +807,7 @@ namespace Worldreaver.Loading
             {
                 try
                 {
-                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false))
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: _token), UniTask.WhenAll(unitasks).ContinueWith(() => _pause = false))
                         .WithCancellation(this.GetCancellationTokenOnDestroy());
                 }
                 catch (OperationCanceledException e)
@@ -800,6 +815,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -814,6 +830,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -846,11 +863,11 @@ namespace Worldreaver.Loading
             {
                 try
                 {
-                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(),
+                    await UniTask.WhenAll(StartFakeLoading().ToUniTask(cancellationToken: _token),
                             UniTask.WhenAll(unitasks)
                                 .ContinueWith(async () =>
                                 {
-                                    await uniTaskContinueWith;
+                                    await uniTaskContinueWith.WithCancellation(_token);
                                     return _pause = false;
                                 }))
                         .WithCancellation(this.GetCancellationTokenOnDestroy());
@@ -860,6 +877,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -870,7 +888,7 @@ namespace Worldreaver.Loading
                     await UniTask.WhenAll(unitasks)
                         .ContinueWith(async () =>
                         {
-                            await uniTaskContinueWith;
+                            await uniTaskContinueWith.WithCancellation(_token);
                             return _pause = false;
                         })
                         .WithCancellation(this.GetCancellationTokenOnDestroy());
@@ -880,6 +898,7 @@ namespace Worldreaver.Loading
 #if UNITY_EDITOR
                     Debug.Log(e.Message);
 #endif
+                    ReleaseTokenSource();
                     return;
                 }
             }
@@ -1059,7 +1078,7 @@ namespace Worldreaver.Loading
             }
         }
 
-        private IEnumerator FadeInCanvas(
+        public IEnumerator FadeInCanvas(
             CanvasGroup alpha,
             float delay = 0)
         {
@@ -1135,13 +1154,32 @@ namespace Worldreaver.Loading
             }
         }
 
+        /// <summary>
+        /// cancel and dispose token source
+        /// </summary>
         private void ReleaseTokenSource()
         {
             if (_tokenSource == null) return;
-            _tokenSource.Cancel();
-            _tokenSource.Dispose();
+            _tokenSource?.Cancel();
+            _tokenSource?.Dispose();
         }
-        
+
+        /// <summary>
+        /// cancel token source
+        /// </summary>
+        public void CancelLoading()
+        {
+            _tokenSource?.Cancel();
+        }
+
+        /// <summary>
+        /// cancel
+        /// </summary>
+        public void CheckThrowToken()
+        {
+            if (_token.IsCancellationRequested) _token.ThrowIfCancellationRequested();
+        }
+
 #if UNITY_EDITOR
         private void OnDisable() { Dispose(); }
 #endif

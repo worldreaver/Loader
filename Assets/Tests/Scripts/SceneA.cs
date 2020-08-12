@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -7,45 +6,17 @@ using UnityEngine.SceneManagement;
 public class SceneA : MonoBehaviour
 {
     public string nameScene;
-
     public string nameSceneB;
-    UniTaskCompletionSource _completionSource = new UniTaskCompletionSource();
-    
-    private CancellationTokenSource _source = new CancellationTokenSource();
-    private CancellationToken token;
-    
-    private async void Start()
-    {
-        token = _source.Token;
-        //Load();
-        try
-        {
-             await UniTask.Run(HeavyTaskA, cancellationToken: token).WithCancellation(token);
-        }
-        catch (OperationCanceledException e)
-        {
-            return;
-        }
-       
-    }
-
-    public void Cancel()
-    {
-        token.ThrowIfCancellationRequested();
-        _source.Cancel();
-    }
 
     /// <summary>
     /// load single scene
     /// </summary>
     public void Load()
     {
-        var source = new CancellationTokenSource();
         TestLoading.instance.loader.Load(nameScene,
             LoadSceneMode.Single,
             null,
-            source,
-            UniTask.Run(HeavyTaskA, cancellationToken: source.Token));
+            UniTask.Run(() => HeavyTaskA(TestLoading.instance.loader.CheckThrowToken), cancellationToken: TestLoading.instance.loader.Token));
     }
 
     /// <summary>
@@ -70,16 +41,23 @@ public class SceneA : MonoBehaviour
     /// heavy task a
     /// normal function
     /// </summary>
-    private void HeavyTaskA()
+    private void HeavyTaskA(
+        Action actionCheckThrow)
     {
         Debug.Log("[TaskA] Starting...");
 
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 20000; i++)
         {
             Debug.Log(i);
             var x = System.Math.Pow(2, 10);
+            actionCheckThrow?.Invoke();
         }
 
         Debug.Log("[TaskA] Done...");
+    }
+
+    public void CancelLoading()
+    {
+        TestLoading.instance.loader.CancelLoading();
     }
 }
