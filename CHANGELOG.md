@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/worldreaver/Loader/compare/1.0.7...1.1.0) (2020-08-12)
+
+
+### Features
+
+* cancel loading ([fa4b83b](https://github.com/worldreaver/Loader/commit/fa4b83b5e9893972be3d7fc8495d8e8f84c8b683))
+
 ## [1.0.7](https://github.com/worldreaver/Loader/compare/1.0.6...1.0.7) (2020-07-05)
 
 
