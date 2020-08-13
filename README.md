@@ -24,78 +24,238 @@ If you want to set a target version, Loader is using *.*.* release tag so you ca
 
 ## Usage
 
-- use method Load in Loader.cs
+- use method Load in Loader
 
-- loading scene with `scene name` and callback `OnSceneLoaded`
+-
 ```csharp
-public async void Load(string scene, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
+/// <summary>
+/// load scene with scene name and callback <paramref name="onSceneLoaded"/>
+/// </summary>
+/// <param name="scene">scene name</param>
+/// <param name="onSceneLoaded">callback call when scene loaded</param>
+public async void Load(
+            string scene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded)
 ```
 
-- loading scene with `scene name` and callback `OnSceneLoaded` and param `Action` will invoked during load scene running
+-
 ```csharp
-public async void Load(string scene, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params Action[] actions)
-```
-
-- loading scene with `scene name` and callback `OnSceneLoaded` and param `UniTask` will invoked during load scene running
-```csharp
-public async void Load(string scene, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params UniTask[] unitasks)
-```
-
-- loading scene with `scene name` and has `LoadSceneMode` `Single` or `Additive` and callback `OnSceneLoaded`
-```csharp
-public async void Load(string scene, LoadSceneMode mode, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
-```
-
-- loading scene with `scene name` and has `LoadSceneMode` `Single` or `Additive` and callback `OnSceneLoaded` and param `Action` will invoked during load scene running
-```csharp
-public async void Load(string scene, LoadSceneMode mode, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params Action[] actions)
-```
-
-- loading scene with `scene name` and has `LoadSceneMode` `Single` or `Additive` and callback `OnSceneLoaded` and param `UniTask` will invoked during load scene running
-```csharp
-public async void Load(string scene, LoadSceneMode mode, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params UniTask[] unitasks)
-```
-
-- scene will load with mode single
-- subScene will load with additive
-```csharp
-public async void Load(string scene, string subScene, UnityAction<Scene, LoadSceneMode> onSceneLoaded)
-public async void Load(string scene, string subScene, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params Action[] actions)
-public async void Load(string scene, string subScene, UnityAction<Scene, LoadSceneMode> onSceneLoaded, params UniTask[] unitasks)
-
-public async void Load(string scene,
-            LoadSceneMode mode,
-            string subScene,
-            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
-            params Action[] actions)
-
-public async void Load(string scene,
-            LoadSceneMode mode,
-            string subScene,
-            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
-            params UniTask[] unitasks)
-
-public async void Load(string scene,
-            LoadSceneMode mode,
-            string subScene,
-            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
-            params Action[] actions)
-
-public async void Load(string scene,
-            LoadSceneMode mode,
-            string subScene,
+/// <summary>
+/// loading scene with name and callback <paramref name="onSceneLoaded"/>
+/// loading will succeed when base load complete and all params <paramref name="unitasks"/> run completed
+/// </summary>
+/// <param name="scene">scene name</param>
+/// <param name="onSceneLoaded">callback call when scene loaded</param>
+/// <param name="unitasks">params unitask will invoked during time loading</param>
+public async void Load(
+            string scene,
             UnityAction<Scene, LoadSceneMode> onSceneLoaded,
             params UniTask[] unitasks)
 ```
 
-- unload scene with params `Action`
+-
 ```csharp
-public async void UnLoad(string scene, params Action[] actions)
+/// <summary>
+/// loading scene with name and callback <paramref name="onSceneLoaded"/>
+/// loading will succeed when base load complete and all params <paramref name="unitasks"/> run completed and <paramref name="uniTaskContinueWith"/> run completed
+/// </summary>
+/// <param name="scene">scene name</param>
+/// <param name="onSceneLoaded">callback call when scene loaded</param>
+/// <param name="uniTaskContinueWith">callback run after all params <paramref name="unitasks"/> run completed</param>
+/// <param name="unitasks">params unitask will invoked during time loading</param>
+public async void Load(
+            string scene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            UniTask uniTaskContinueWith,
+            params UniTask[] unitasks)
 ```
 
-- unload scene with params `UniTask`
+
+
+### scene will load with mode single
+
+- 
 ```csharp
-public async void UnLoad(string scene, params UniTask[] unitasks)
+/// <summary>
+/// load scene with name with LoadSceneMode <paramref name="mode"/> and callback <paramref name="onSceneLoaded"/>
+/// </summary>
+/// <param name="scene">scene name</param>
+/// <param name="mode">mode load scene</param>
+/// <param name="onSceneLoaded">callback call when scene loaded</param>
+public async void Load(
+            string scene,
+            LoadSceneMode mode,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded)
+```
+
+-
+```csharp
+/// <summary>
+/// load scene with name with LoadSceneMode <paramref name="mode"/> and callback <paramref name="onSceneLoaded"/>
+/// loading will succeed when base load complete and all params <paramref name="unitasks"/> run completed
+/// </summary>
+/// <param name="scene">scene name</param>
+/// <param name="mode">mode load scene</param>
+/// <param name="onSceneLoaded">callback call when scene loaded</param>
+/// <param name="unitasks">params unitask will invoked during time loading</param>
+public async void Load(
+            string scene,
+            LoadSceneMode mode,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            params UniTask[] unitasks)
+```
+
+-
+```csharp
+/// <summary>
+/// load scene with name with LoadSceneMode <paramref name="mode"/> and callback <paramref name="onSceneLoaded"/>
+/// loading will succeed when base load complete and all params <paramref name="unitasks"/> run completed and <paramref name="uniTaskContinueWith"/> run completed
+/// </summary>
+/// <param name="scene">scene name</param>
+/// <param name="mode">mode load scene</param>
+/// <param name="onSceneLoaded">callback call when scene loaded</param>
+/// <param name="uniTaskContinueWith">callback run after all params <paramref name="unitasks"/> run completed</param>
+/// <param name="unitasks">params unitask will invoked during time loading</param>
+public async void Load(
+            string scene,
+            LoadSceneMode mode,
+            UniTask uniTaskContinueWith,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            params UniTask[] unitasks)
+```
+
+
+
+### subScene will load with additive
+
+-
+```csharp
+/// <summary>
+/// load two scene <paramref name="scene"/> and <paramref name="subScene"/> with callback <paramref name="onSceneLoaded"/>
+/// be careful <paramref name="onSceneLoaded"/> will be called twice, one of <paramref name="scene"/> loaded and one of <paramref name="subScene"/> loaded
+/// </summary>
+/// <param name="scene">scene name will load with mode single</param>
+/// <param name="subScene">sub scene name will load with mode additive</param>
+/// <param name="onSceneLoaded">callback call when scene loaded</param>
+public async void Load(
+            string scene,
+            string subScene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded)
+```
+
+-
+```csharp
+/// <summary>
+/// load two scene <paramref name="scene"/> and <paramref name="subScene"/> with callback <paramref name="onSceneLoaded"/>
+/// loading will succeed when base load complete and all params <paramref name="unitasks"/> run completed
+/// be careful <paramref name="onSceneLoaded"/> will be called twice, one of <paramref name="scene"/> loaded and one of <paramref name="subScene"/> loaded
+/// </summary>
+/// <param name="scene">scene name will load with mode single</param>
+/// <param name="subScene">sub scene name will load with mode additive</param>
+/// <param name="onSceneLoaded">callback call when scene loaded</param>
+/// <param name="unitasks">params unitask will invoked during time loading</param>
+public async void Load(
+            string scene,
+            string subScene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            params UniTask[] unitasks)
+```
+
+-
+```csharp
+/// <summary>
+/// load two scene <paramref name="scene"/> and <paramref name="subScene"/> with callback <paramref name="onSceneLoaded"/>
+/// loading will succeed when base load complete and all params <paramref name="unitasks"/> run completed and <paramref name=" uniTaskContinueWith"/> completed
+/// be careful <paramref name="onSceneLoaded"/> will be called twice, one of <paramref name="scene"/> loaded and one of <paramref name="subScene"/> loaded
+/// </summary>
+/// <param name="scene">scene name will load with mode single</param>
+/// <param name="subScene">sub scene name will load with mode additive</param>
+/// <param name="onSceneLoaded">callback call when scene loaded</param>
+/// <param name="uniTaskContinueWith">callback run after all params <paramref name="unitasks"/> run completed</param>
+/// <param name="unitasks">params unitask will invoked during time loading</param>
+public async void Load(
+            string scene,
+            string subScene,
+            UniTask uniTaskContinueWith,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            params UniTask[] unitasks)
+```
+
+-
+```csharp
+/// <summary>
+/// load two scene <paramref name="scene"/> and <paramref name="subScene"/> with callback <paramref name="onSceneLoaded"/>
+/// loading will succeed when base load complete and all params <paramref name="unitasks"/> run completed
+/// be careful <paramref name="onSceneLoaded"/> will be called twice, one of <paramref name="scene"/> loaded and one of <paramref name="subScene"/> loaded
+/// </summary>
+/// <param name="scene">scene name will load with LoadSceneMode <paramref name="mode"/></param>
+/// <param name="mode">mode load of <paramref name="scene"/></param>
+/// <param name="subScene">sub scene name will load with mode additive</param>
+/// <param name="onSceneLoaded">callback call when scene loaded</param>
+/// <param name="unitasks">params unitask will invoked during time loading</param>
+public async void Load(
+            string scene,
+            LoadSceneMode mode,
+            string subScene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            params UniTask[] unitasks)
+```
+
+-
+```csharp
+/// <summary>
+/// load two scene <paramref name="scene"/> and <paramref name="subScene"/> with callback <paramref name="onSceneLoaded"/>
+/// loading will succeed when base load complete and all params <paramref name="unitasks"/> run completed and <paramref name=" uniTaskContinueWith"/> completed
+/// be careful <paramref name="onSceneLoaded"/> will be called twice, one of <paramref name="scene"/> loaded and one of <paramref name="subScene"/> loaded
+/// </summary>
+/// <param name="scene">scene name will load with LoadSceneMode <paramref name="mode"/></param>
+/// <param name="mode">mode load of <paramref name="scene"/></param>
+/// <param name="subScene">sub scene name will load with mode additive</param>
+/// <param name="onSceneLoaded">callback call when scene loaded</param>
+/// <param name="uniTaskContinueWith">callback run after all params <paramref name="unitasks"/> run completed</param>
+/// <param name="unitasks">params unitask will invoked during time loading</param>
+public async void Load(
+            string scene,
+            LoadSceneMode mode,
+            string subScene,
+            UnityAction<Scene, LoadSceneMode> onSceneLoaded,
+            UniTask uniTaskContinueWith,
+            params UniTask[] unitasks)
+```
+
+
+### unload scene with params `UniTask`
+-
+```csharp
+/// <summary>
+/// unload scene with name
+/// </summary>
+/// <param name="scene">scene name</param>
+/// <param name="unitasks">params unitask will invoked during time loading</param>
+public async void UnLoad(
+            string scene,
+            params UniTask[] unitasks)
+```
+
+
+### Cancel Loading
+
+- call method CancelLoading when you want cancel loading
+```csharp
+/// <summary>
+/// cancel token source
+/// </summary>
+public void CancelLoading()
+```
+
+### Exception
+
+- call method CheckThrowToken where you want to stop when you have canceled from token source
+```csharp
+/// <summary>
+/// cancel
+/// </summary>
+public void CheckThrowToken()
 ```
 
 
@@ -107,74 +267,37 @@ public async void UnLoad(string scene, params UniTask[] unitasks)
 ```
 
 ```csharp
-    private bool check;
 
-    public async void Test()
+[SerializeField] private Loader loader;
+public string nameScene;
+
+...
+
+/// <summary>
+/// heavy task a
+/// normal function
+/// </summary>
+private void HeavyTaskA()
+{
+    Debug.Log("[TaskA] Starting...");
+    isDoneTaskA = false;
+    for (int i = 0; i < 50000000; i++)
     {
-        await UniTask.WhenAll(StartFakeLoading().ToUniTask(), UniTask.WhenAll(UniTask.Run(HeavyTaskA), UniTask.Run(HeavyTaskB)).ContinueWith(() =>
-        {
-            _pause = false;
-            Debug.Log("Done two task");
-        }));
-        Debug.Log("Complete");
+        var x = Math.Pow(2, 10);
     }
 
+    isDoneTaskA = true;
+    Debug.Log("[TaskA] Done...");
+}
 
-    public void HeavyTaskA()
-    {
-        for (int i = 0; i < 10000000; i++)
-        {
-            var ex = Math.Pow(2, 10);
-        }
 
-        Debug.Log("Done Task A");
-    }
 
-    public void HeavyTaskB()
-    {
-        for (int i = 0; i < 6; i++)
-        {
-            var ex = Math.Pow(2, 10);
-        }
+...
 
-        Debug.Log("Done Task B");
-    }
+loader.Load(nameScene,
+            LoadSceneMode.Single,
+            null,
+            UniTask.Run(() => HeavyTaskA(loader.CheckThrowToken), cancellationToken: loader.Token));
 
-    private bool _pause;
-
-    private IEnumerator StartFakeLoading()
-    {
-        var _lerpValue = 0f;
-        _pause = true;
-        var _deltaTime = 0.02f;
-        var fakeLoadingTime = 10f;
-
-        while (_lerpValue < 1)
-        {
-            if (!_pause)
-            {
-                _lerpValue += _deltaTime / fakeLoadingTime;
-            }
-            else
-            {
-                if (_lerpValue < 0.42f)
-                {
-                    _lerpValue += _deltaTime / fakeLoadingTime / 5f;
-                }
-                else if (_lerpValue < 0.8f)
-                {
-                    _lerpValue += _deltaTime / fakeLoadingTime / 12f;
-                }
-                else if (_lerpValue < 0.99f)
-                {
-                    _lerpValue += _deltaTime / fakeLoadingTime / 20f;
-                }
-            }
-
-            yield return null;
-        }
-
-        Debug.Log("Fake done");
-    }
 ```
 

@@ -2,9 +2,11 @@
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Worldreaver.Loading;
 
 public class SceneA : MonoBehaviour
 {
+    [SerializeField] private Loader loader;
     public string nameScene;
     public string nameSceneB;
 
@@ -13,17 +15,17 @@ public class SceneA : MonoBehaviour
     /// </summary>
     public void Load()
     {
-        TestLoading.instance.loader.Load(nameScene,
+        loader.Load(nameScene,
             LoadSceneMode.Single,
             null,
-            UniTask.Run(() => HeavyTaskA(TestLoading.instance.loader.CheckThrowToken), cancellationToken: TestLoading.instance.loader.Token));
+            UniTask.Run(() => HeavyTaskA(loader.CheckThrowToken), cancellationToken: loader.Token));
     }
 
     /// <summary>
     /// load multi scene
     /// main scene is <param name="nameScene"/>> and sub scene is <param name="nameSceneB"/>
     /// </summary>
-    public void Load2() { TestLoading.instance.loader.Load(nameScene, nameSceneB, CallBack); }
+    public void Load2() { loader.Load(nameScene, nameSceneB, CallBack); }
 
     /// <summary>
     /// callback load success main scene
@@ -58,6 +60,6 @@ public class SceneA : MonoBehaviour
 
     public void CancelLoading()
     {
-        TestLoading.instance.loader.CancelLoading();
+        loader.CancelLoading();
     }
 }
