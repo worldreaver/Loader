@@ -6,26 +6,19 @@ using Worldreaver.Loading;
 
 public class SceneA : MonoBehaviour
 {
-    [SerializeField] private Loader loader;
     public string nameScene;
     public string nameSceneB;
 
     /// <summary>
     /// load single scene
     /// </summary>
-    public void Load()
-    {
-        loader.Load(nameScene,
-            LoadSceneMode.Single,
-            null,
-            UniTask.Run(() => HeavyTaskA(loader.CheckThrowToken), cancellationToken: loader.Token));
-    }
+    public void Load() { LoaderHolder.instance.loader.Load(nameScene, LoadSceneMode.Single, null, UniTask.Run(() => HeavyTaskA(LoaderHolder.instance.loader.CheckThrowToken), cancellationToken: LoaderHolder.instance.loader.Token)); }
 
     /// <summary>
     /// load multi scene
     /// main scene is <param name="nameScene"/>> and sub scene is <param name="nameSceneB"/>
     /// </summary>
-    public void Load2() { loader.Load(nameScene, nameSceneB, CallBack); }
+    public void Load2() { LoaderHolder.instance.loader.Load(nameScene, nameSceneB, CallBack); }
 
     /// <summary>
     /// callback load success main scene
@@ -58,8 +51,5 @@ public class SceneA : MonoBehaviour
         Debug.Log("[TaskA] Done...");
     }
 
-    public void CancelLoading()
-    {
-        loader.CancelLoading();
-    }
+    public void CancelLoading() { LoaderHolder.instance.loader.CancelLoading(); }
 }
